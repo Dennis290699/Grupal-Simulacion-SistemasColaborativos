@@ -4,6 +4,7 @@ Trabajo Grupal de la catedra Sistemas Colaborativos
 ## Integrantes
 - Trujillo Vistin Dennis Adrian
 - Loya Cadena Bryan Eduardo
+- Condolo Narvaez Byron Paul
 - Kelly Denisse Ledesma Aguilar
 
 ## Estructura del monorepo
