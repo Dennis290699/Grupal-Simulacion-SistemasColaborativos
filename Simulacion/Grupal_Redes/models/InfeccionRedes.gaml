@@ -1,5 +1,10 @@
 model InfeccionRedesGIS
 
+// Simple species for salas (rooms) used by the init create
+species sala {
+	string nombre;
+}
+
 global {
 
 // =====================================================
@@ -92,33 +97,20 @@ location <- shape.location;
 		write "===================================";
 	}
 
-	// =====================================================
-	// MONITOR GLOBAL
-	// =====================================================
-	reflex monitor {
-		int infectados <- length(computer where each.infected);
-		int sanos <- length(computer where (!each.infected and !each.secured));
-		int asegurados <- length(computer where each.secured);
-		write "Infectados: " + infectados + " | Sanos: " + sanos + " | Asegurados: " + asegurados;
-		if sanos = 0 {
-			write "=== SIMULACIÓN COMPLETADA ===";
-			do pause;
+		// =====================================================
+		// MONITOR GLOBAL
+		// =====================================================
+		reflex monitor {
+			int infectados <- length(computer where each.infected);
+			int sanos <- length(computer where (each.infected = false and each.secured = false));
+			int asegurados <- length(computer where each.secured);
+			write "Infectados: " + infectados + " | Sanos: " + sanos + " | Asegurados: " + asegurados;
+			if sanos = 0 {
+				write "=== SIMULACIÓN COMPLETADA ===";
+				do pause;
+			}
+
 		}
-
-	}
-
-}
-
-// =====================================================
-// SALAS
-// =====================================================
-species sala {
-	string nombre;
-
-	aspect default {
-		draw shape color: rgb(220, 220, 220) border: #black;
-		draw string(nombre) at: location color: #black;
-	}
 
 }
 
@@ -161,7 +153,7 @@ species computer {
 	// =====================================================
 	// PROPAGACIÓN
 	// =====================================================
-	reflex spread when: infected and !isolated {
+	reflex spread when: infected and (isolated = false) {
 		if cooldown > 0 {
 			cooldown <- cooldown - 1;
 			return;
@@ -170,7 +162,7 @@ species computer {
 		if flip(probabilidad_scan) {
 			list<connection> conexiones <- connection where (each.source = self);
 			if length(conexiones) > 0 {
-				list<computer> objetivos_disponibles <- (conexiones collect each.target) where (!each.secured and !each.isolated and !each.infected);
+				list<computer> objetivos_disponibles <- ((conexiones collect each.target) where (each.secured = false and each.isolated = false and each.infected = false));
 				if length(objetivos_disponibles) > 0 {
 					computer objetivo <- first(objetivos_disponibles sort_by each.failed_attempts);
 					objetivo.failed_attempts <- objetivo.failed_attempts + 1;
@@ -291,7 +283,7 @@ experiment LAN type: gui {
 		}
 
 		monitor "Infectados" value: length(computer where each.infected);
-		monitor "Sanos" value: length(computer where (!each.infected and !each.secured));
+		monitor "Sanos" value: length(computer where (each.infected = false and each.secured = false));
 		monitor "Asegurados" value: length(computer where each.secured);
 		monitor "Total nodos" value: length(computer);
 	}
