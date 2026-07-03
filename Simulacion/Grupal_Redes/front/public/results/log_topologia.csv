@@ -1,4 +1,3 @@
-enc_topo
 origen,destino,tipo_origen,tipo_destino
 pc1,pc2,pc,pc
 pc2,pc4,pc,pc
