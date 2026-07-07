@@ -3,9 +3,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import cytoscape from 'cytoscape'
-import { fetchCSVSkipFirstLine, cleanRow } from '../composables/usePolling'
+import { fetchCSVSkipFirstLine, cleanRow } from '../components/usePolling'
 import { ICON_PC, ICON_PC_INFECTED, ICON_PC_ISOLATED, ICON_FIREWALL, ICON_FIREWALL_INFECTED, ICON_FIREWALL_ISOLATED, ICON_SWITCH, ICON_SWITCH_INFECTED, ICON_SWITCH_ISOLATED, ICON_CLOUD, ICON_SERVER, ICON_SERVER_INFECTED, ICON_SERVER_ISOLATED } from '../utils/icons'
 
 // ════════════════════════════════════════════════════════════════
@@ -16,11 +16,10 @@ const props = defineProps({ base: { type: String, default: '/results' } })
 const emit = defineEmits(['ready', 'init'])
 
 const container = ref(null)  // Referencia DOM para Cytoscape
-let cy = null               // Instancia de Cytoscape.js
+let cy = null               // Instancia de Cytoscape
 
 function cyStyles() {
   return [
-
     {
       selector: 'node',
       style: {
@@ -73,10 +72,10 @@ function cyStyles() {
       selector: 'edge',
       style: {
         width: 3,
-        'line-color': '#f97316',           
+        'line-color': '#f97316',          
         'target-arrow-color': '#f97316',
         'target-arrow-shape': 'triangle',  
-        'curve-style': 'bezier',           
+        'curve-style': 'bezier',          
         opacity: 0.8,
       },
     },
@@ -85,7 +84,7 @@ function cyStyles() {
       style: {
         'line-color': '#ef4444',          
         'target-arrow-color': '#ef4444',
-        width: 6,                          
+        width: 6,                                  
         opacity: 1,
         'line-style': 'solid'
       }
@@ -97,59 +96,55 @@ function cyStyles() {
  * Inicializa el grafo de red desde los CSV:
  */
 async function initCytoscape() {
-  // Descargar en paralelo: nodos y topología
-  const [nodosRaw, topoRaw] = await Promise.all([
-    fetchCSVSkipFirstLine(`${props.base}/log_nodos.csv`),
-    fetchCSVSkipFirstLine(`${props.base}/log_topologia.csv`),
-  ])
+  if (!container.value) return   // Guarda de seguridad: si el DOM no está listo, no sigas
 
-  // Normalizar espacios en claves/valores de CSV
-  const nodos = nodosRaw.map(cleanRow).filter(n => n.nombre && n.nombre !== '')
-  const topo = topoRaw.map(cleanRow).filter(t => t.origen && t.destino && t.origen !== '' && t.destino !== '')
+  try {
+    const [nodosRaw, topoRaw] = await Promise.all([
+      fetchCSVSkipFirstLine(`${props.base}/log_nodos.csv`),
+      fetchCSVSkipFirstLine(`${props.base}/log_topologia.csv`),
+    ])
 
-  // Crear mapa de estado por nodo
-  const nodoEstado = {}
-  nodos.forEach(n => {
-    nodoEstado[n.nombre] = {
-      tipo: n.tipo,
-      infected: false,
-      isolated: false,
-      is_internet: n.tipo === 'internet'  // Flag especial para Internet
+    const nodos = nodosRaw.map(cleanRow).filter(n => n.nombre && n.nombre !== '')
+    const topo = topoRaw.map(cleanRow).filter(t => t.origen && t.destino && t.origen !== '' && t.destino !== '')
+
+    const nodoEstado = {}
+    nodos.forEach(n => {
+      nodoEstado[n.nombre] = {
+        tipo: n.tipo,
+        infected: false,
+        isolated: false,
+        is_internet: n.tipo === 'internet'
+      }
+    })
+
+    const elements = [
+      ...nodos.map(n => ({ data: { id: n.nombre, label: n.nombre, tipo: n.tipo } })),
+      ...topo.map(t => ({ data: { id: `${t.origen}-${t.destino}`, source: t.origen, target: t.destino } })),
+    ]
+
+    if (cy) { cy.destroy(); cy = null }   // Destruye instancia previa si existiera (HMR)
+
+    cy = cytoscape({
+      container: container.value,
+      elements,
+      style: cyStyles(),
+      layout: { name: 'breadthfirst', directed: false, padding: 60, spacingFactor: 2.8 },
+      userZoomingEnabled: true,
+      userPanningEnabled: true
+    })
+
+    const internetNodo = nodos.find(n => n.tipo === 'internet')
+    if (internetNodo) {
+      nodoEstado[internetNodo.nombre].infected = true
+      const node = cy.getElementById(internetNodo.nombre)
+      if (node && node.length) node.addClass('infected')
     }
-  })
 
-  // Convertir datos a formato Cytoscape (nodos con id/label/tipo, aristas con source/target)
-  const elements = [
-    ...nodos.map(n => ({ data: { id: n.nombre, label: n.nombre, tipo: n.tipo } })),
-    ...topo.map(t => ({ data: { id: `${t.origen}-${t.destino}`, source: t.origen, target: t.destino } })),
-  ]
-
-  // Inicializar Cytoscape 
-  cy = cytoscape({
-    container: container.value,
-    elements,
-    style: cyStyles(),
-    layout: {
-      name: 'breadthfirst',
-      directed: false,
-      padding: 60,
-      spacingFactor: 2.8  // Espaciamiento entre capas
-    },
-    userZoomingEnabled: true,
-    userPanningEnabled: true
-  })
-
-  // Internet comienza infectado (fuente original del malware)
-  const internetNodo = nodos.find(n => n.tipo === 'internet')
-  if (internetNodo) {
-    nodoEstado[internetNodo.nombre].infected = true
-    const node = cy.getElementById(internetNodo.nombre)
-    if (node && node.length) node.addClass('infected')
+    emit('init', nodoEstado)
+    emit('ready')
+  } catch (error) {
+    console.error("Error cargando los datos de la topología:", error)
   }
-
-  // Emitir snapshot del estado inicial al padre (App.vue)
-  emit('init', nodoEstado)
-  emit('ready')
 }
 
 /**
@@ -165,14 +160,8 @@ function updateNode(nombre, infected, isolated) {
   node.removeClass('infected isolated')
   
   if (isolated) {
-    // ─────────────────────────────────────────────
-    // Nodo aislado: mostrar ícono de aislado
-    // ─────────────────────────────────────────────
     node.addClass('isolated')
   } else if (infected) {
-    // ─────────────────────────────────────────────
-    // Nodo infectado: mostrar ícono y animar pulso
-    // ─────────────────────────────────────────────
     node.addClass('infected')
     
     // Capturar tamaño original
@@ -194,12 +183,10 @@ function updateNode(nombre, infected, isolated) {
 
 /**
  * Marca una arista como "attack" para mostrar ataque en progreso.
- * Cambia el color y grosor de la arista.
  */
 function markAttackEdge(desde, nodo) {
   if (!cy || !desde || !nodo) return
   
-  // Buscar arista entre desde→nodo o nodo→desde
   const edge = cy.edges().filter(e =>
     ((e.data('source') === desde && e.data('target') === nodo) ||
      (e.data('source') === nodo && e.data('target') === desde))
@@ -214,10 +201,16 @@ function resizeFit() {
   cy.fit(undefined, 40)
 }
 
-// Inicializar Cytoscape cuando el componente se monta
-onMounted(() => initCytoscape())
+// Inicializar Cytoscape de forma segura cuando el componente se monta en el DOM
+onMounted(() => {
+  initCytoscape()
+})
 
-// Exponer métodos públicos al padre (App.vue)
+onBeforeUnmount(() => {
+  if (cy) { cy.destroy(); cy = null }
+})
+
+// Exponer métodos públicos al padre
 defineExpose({ updateNode, markAttackEdge, resizeFit })
 </script>
 

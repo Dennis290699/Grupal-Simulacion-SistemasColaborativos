@@ -1,2 +1,2 @@
-# Simulacion
-Codigo fuente del proyecto.
+# Grupal_Redes
+Simulacion virus WannaCry

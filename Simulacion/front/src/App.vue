@@ -5,24 +5,29 @@
         <span class="header-tag">BDI · GAMA Platform</span>
         <h1 class="header-title">WannaCry Network Simulation</h1>
       </div>
-      <div class="header-stats">
-        <div class="stat" :class="{ danger: stats.infectados > 0 }">
-          <span class="stat-value">{{ stats.infectados }}</span>
-          <span class="stat-label">Infectados</span>
+      <div class="header-actions">
+        <div class="header-stats">
+          <div class="stat" :class="{ danger: stats.infectados > 0 }">
+            <span class="stat-value">{{ stats.infectados }}</span>
+            <span class="stat-label">Infectados</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value">{{ stats.sanos }}</span>
+            <span class="stat-label">Sanos</span>
+          </div>
+          <div class="stat warn">
+            <span class="stat-value">{{ stats.aislados }}</span>
+            <span class="stat-label">Aislados</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value">{{ stats.ciclo }}</span>
+            <span class="stat-label">Ciclo</span>
+          </div>
+          <div class="pulse-dot" :class="pollingActive ? 'active' : 'inactive'"></div>
         </div>
-        <div class="stat">
-          <span class="stat-value">{{ stats.sanos }}</span>
-          <span class="stat-label">Sanos</span>
-        </div>
-        <div class="stat warn">
-          <span class="stat-value">{{ stats.aislados }}</span>
-          <span class="stat-label">Aislados</span>
-        </div>
-        <div class="stat">
-          <span class="stat-value">{{ stats.ciclo }}</span>
-          <span class="stat-label">Ciclo</span>
-        </div>
-        <div class="pulse-dot" :class="pollingActive ? 'active' : 'inactive'"></div>
+        <button class="report-button" type="button" @click="openFinalReport">
+          Informe final
+        </button>
       </div>
     </header>
 
@@ -32,8 +37,7 @@
       <div class="legend">
         <span class="leg-item"><span class="dot" style="background:#22c55e"></span>Sano</span>
         <span class="leg-item"><span class="dot" style="background:#ef4444"></span>Infectado</span>
-        <span class="leg-item"><span class="dot"
-            style="background:#1e293b;border:2px solid #475569"></span>Aislado</span>
+        <span class="leg-item"><span class="dot" style="background:#1e293b;border:2px solid #475569"></span>Aislado</span>
         <span class="leg-item">🖥️ PC</span>
         <span class="leg-item">🛡️ Firewall</span>
         <span class="leg-item">🔀 Switch</span>
@@ -53,33 +57,81 @@
         </tr>
       </template>
     </ChartsGrid>
+
+    <transition name="report-fade">
+      <div v-if="showFinalReport" class="report-overlay" @click.self="closeFinalReport">
+        <div class="report-panel" role="dialog" aria-modal="true" aria-labelledby="final-report-title">
+          <div class="report-panel-header">
+            <div>
+              <div class="report-kicker">Resumen de simulación</div>
+              <h2 id="final-report-title">Informe final</h2>
+            </div>
+            <button class="report-close" type="button" @click="closeFinalReport">Cerrar</button>
+          </div>
+
+          <div v-if="reportLoading" class="report-state">Cargando informe...</div>
+          <div v-else-if="reportError" class="report-state error">{{ reportError }}</div>
+
+          <div v-else class="report-table-frame">
+            <table class="report-table">
+<thead>
+                <tr>
+                  <th>N° Simulación</th>
+                  <th>Escenario</th>
+                  <th>Nivel Max Parche</th>
+                  <th>Tiempo de Propagación y Contención</th> <!-- Título más profesional -->
+                  <th>Número Infectados</th>
+                  <th>Número Asalvo</th>
+                  <th>Nivel Firewall</th>
+                  <th>Nivel Contención</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(row, index) in finalReportRows" :key="index">
+                  <td>{{ row['N° Simulación'] }}</td>
+                  <td><strong style="color:#f97316">{{ row.escenario }}</strong></td>
+                  <td>{{ row['Nivel Max Parche'] }}</td>
+                  <td style="font-family: monospace;">{{ row['Tiempo de Infección'] }}</td>
+                  <td>{{ row['Número Infectados'] }}</td>
+                  <td>{{ row['Número Asalvo'] }}</td>
+                  <td>{{ row['Nivel Firewall'] }}</td>
+                  <td>{{ row['Nivel Contención'] }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
 <script setup>
-import { ref, onUnmounted, computed, nextTick } from 'vue'
+import { ref, onUnmounted, computed } from 'vue'
 import * as echarts from 'echarts'
 import CytoscapeMap from './components/CytoscapeMap.vue'
 import ChartsGrid from './components/ChartsGrid.vue'
-import { fetchCSV, cleanRow } from './composables/usePolling'
-
+import { fetchCSV, fetchCSVSkipFirstLine, cleanRow } from './components/usePolling'
 
 const BASE = '/results'
 
-const cyCompRef = ref(null)  // Referencia a componente CytoscapeMap
-const chartsRef = ref(null)   // Referencia a componente ChartsGrid
+const cyCompRef = ref(null)
+const chartsRef = ref(null)
 
-// Instancias reales de librerías (no reactivas, persistentes)
-let cyComp = null             // Instancia de Cytoscape
-let ecInfectados = null       // Instancia ECharts para infectados
-let ecPatch = null            // Instancia ECharts para patch level
-let ecIntenciones = null      // Instancia ECharts para intenciones BDI
-let pollTimer = null          // ID del setInterval de encuesta
-let pollingStarted = false    // Bandera para evitar múltiples inicios
+let cyComp = null
+let ecInfectados = null
+let ecPatch = null
+let ecIntenciones = null
+let pollTimer = null
+let pollingStarted = false
 
 const pollingActive = ref(false)
 const eventos = ref([])
 const nodoEstado = ref({})
+const showFinalReport = ref(false)
+const reportLoading = ref(false)
+const reportError = ref('')
+const finalReportRows = ref([])
 
 const stats = computed(() => {
   const vals = Object.values(nodoEstado.value)
@@ -92,7 +144,76 @@ const stats = computed(() => {
 
 const eventosRecientes = computed(() => [...eventos.value].reverse().slice(0, 50))
 
-// ── CYTOSCAPE callbacks ───────────────────────────────────
+
+
+/**
+ * Traductor de tiempo operativo: Convierte ciclos de GAMA en días y horas reales (1 Ciclo = 1 Hora).
+ */
+function convertirTiempoReal(ciclos) {
+  if (ciclos === null || ciclos === undefined || isNaN(ciclos) || ciclos < 0) return '-'
+  if (ciclos === 0) return '0h (< 1 hora)'
+  
+  const dias = Math.floor(ciclos / 24)
+  const horas = ciclos % 24
+  
+  const partes = []
+  if (dias > 0) partes.push(`${dias} día${dias > 1 ? 's' : ''}`)
+  if (horas > 0) partes.push(`${horas} hora${horas > 1 ? 's' : ''}`)
+  
+  return partes.join(' y ')
+}
+
+/**
+ * Orquestador principal del modal de Informe Final Ejecutivo.
+ */
+async function openFinalReport() {
+  showFinalReport.value = true
+  reportLoading.value = true
+  reportError.value = ''
+  finalReportRows.value = []
+
+  try {
+    const t = Date.now()
+    const rawRows = await fetchCSV(`${BASE}/log_informes.csv?t=${t}`)
+    const rows = rawRows.map(cleanRow)
+
+    finalReportRows.value = rows.map((row, index) => {
+      const inicio = parseNumber(row.ciclo_inicio_infeccion)
+      const fin = parseNumber(row.ciclo_fin_contencion)
+      const cicloFinal = parseNumber(row.ciclo_final)
+
+      let textoTiempo = '-'
+      if (inicio !== null && inicio >= 0) {
+        if (fin !== null && fin >= 0) {
+          const delta = fin - inicio
+          textoTiempo = `${delta}h (${convertirTiempoReal(delta)})`
+        } else {
+          const delta = (cicloFinal ?? 0) - inicio
+          textoTiempo = `> ${delta}h (Sin contención total)`
+        }
+      }
+
+      return {
+        'N° Simulación': index + 1,
+        escenario: row.escenario,
+        'Nivel Max Parche': row.nivel_max_parche != null ? `${row.nivel_max_parche}%` : '-',
+        'Tiempo de Infección': textoTiempo,
+        'Número Infectados': row.numero_infectados,
+        'Número Asalvo': row.numero_asalvo,
+        'Nivel Firewall': row.nivel_firewall != null ? `${row.nivel_firewall}%` : '-',
+        'Nivel Contención': row.nivel_contencion != null ? `${row.nivel_contencion}%` : '-',
+      }
+    })
+  } catch (error) {
+    reportError.value = `No se pudo cargar el informe: ${error.message}`
+  } finally {
+    reportLoading.value = false
+  }
+}
+function closeFinalReport() {
+  showFinalReport.value = false
+}
+
 function onCyInit(initialEstado) {
   nodoEstado.value = initialEstado
 }
@@ -106,65 +227,45 @@ function updateCyNode(nombre, infected, isolated) {
   cyComp.updateNode(nombre, infected, isolated)
 }
 
-// ════════════════════════════════════════════════════════════════
-// CICLO DE VIDA: INICIALIZACIÓN DE GRÁFICOS
-// ════════════════════════════════════════════════════════════════
 async function onChartsMounted() {
-  await waitForChartRefs()  // Polling: espera a que refs tengan .value
-  initCharts()              // Inicializa 3 instancias ECharts
-  startPolling()            // Comienza encuesta periódica c/2s
+  await waitForChartRefs()
+  initCharts()
+  startPolling()
 }
-
 
 function waitForChartRefs(maxTries = 30) {
   return new Promise((resolve) => {
     let tries = 0
     function check() {
-      // Intenta acceder a los elementos DOM de las 3 refs
       const infectEl = chartsRef.value?.infectados
       const patchEl = chartsRef.value?.patch
       const intencionesEl = chartsRef.value?.intenciones
 
-      // Si todos tienen .value (elemento DOM), éxito
       if (infectEl && patchEl && intencionesEl) {
         resolve()
         return
       }
 
-      // Aún no listos, reintentar en próximo frame
       tries++
       if (tries >= maxTries) {
-        console.error('⚠️ ChartsGrid refs no resueltos tras', maxTries, 'frames (~0.5s)')
-        resolve() // Resolver igual para no colgar la app
+        resolve()
         return
       }
-
-      // Polling con requestAnimationFrame = más eficiente que setTimeout
       requestAnimationFrame(check)
     }
     requestAnimationFrame(check)
   })
 }
 
-// ════════════════════════════════════════════════════════════════
-// INSTANCIACIÓN DE GRÁFICOS ECHARTS
-// ════════════════════════════════════════════════════════════════
 function initCharts() {
-  // Guard: no reiniciar si ya existen instancias
   if (ecInfectados || ecPatch || ecIntenciones) return
 
-  // Obtener referencias DOM desde ChartsGrid expuestas
   const infectEl = chartsRef.value?.infectados
   const patchEl = chartsRef.value?.patch
   const intencionesEl = chartsRef.value?.intenciones
 
-  // Guard: si alguno falta, no proceder
-  if (!infectEl || !patchEl || !intencionesEl) {
-    console.warn('⚠️ ChartsGrid refs no disponibles en initCharts()')
-    return
-  }
+  if (!infectEl || !patchEl || !intencionesEl) return
 
-  // Inicializar 3 instancias ECharts independientes con tema oscuro
   ecInfectados = echarts.init(infectEl, 'dark')
   ecPatch = echarts.init(patchEl, 'dark')
   ecIntenciones = echarts.init(intencionesEl, 'dark')
@@ -191,27 +292,12 @@ function initCharts() {
     backgroundColor: 'transparent',
     tooltip: {
       trigger: 'axis',
-      axisPointer: { type: 'shadow' },
-      formatter: function (params) {
-        const map = { spread: 'Propagar', patch: 'Parchar', isolated: 'Aislar', normal: 'Normal' }
-        let res = `<div style="font-family: monospace;">Ciclo: ${params[0].name}</div>`
-        params.forEach(item => {
-          if (item.value > 0) {
-            const label = map[item.seriesName] || item.seriesName
-            res += `<div style="font-family: monospace;">${item.marker} ${label}: <b>${item.value}</b></div>`
-          }
-        })
-        return res
-      }
+      axisPointer: { type: 'shadow' }
     },
     legend: {
       data: ['spread', 'patch', 'isolated', 'normal'],
       textStyle: { color: '#94a3b8', fontSize: 10 },
-      top: 4,
-      formatter: function (name) {
-        const map = { spread: 'Propagar', patch: 'Parchar', isolated: 'Aislar', normal: 'Normal' }
-        return map[name] || name
-      }
+      top: 4
     },
     grid: { left: 44, right: 16, top: 36, bottom: 36 },
     xAxis: { type: 'category', data: [], axisLabel: { color: '#94a3b8', fontSize: 10 } },
@@ -225,114 +311,85 @@ function initCharts() {
   })
 }
 
-// ════════════════════════════════════════════════════════════════
-// ENCUESTA PERIÓDICA DE LOGS (POLLING)
-// ════════════════════════════════════════════════════════════════
-
-let lastRowCount = 0  // Controla qué filas son "nuevas" desde último poll
+let lastRowCount = 0
 
 function startPolling() {
-  if (pollingStarted) return  // Guard: evita múltiples inicios
-  
+  if (pollingStarted) return
   pollingStarted = true
-  pollingActive.value = true  // Activa indicador visual (pulse-dot)
-  pollTimer = setInterval(pollCSV, 2000)  // Encuesta cada 2 segundos
-  pollCSV()  // Carga inicial inmediata
+  pollingActive.value = true
+  pollTimer = setInterval(pollCSV, 2000)
+  pollCSV()
 }
 
 onUnmounted(() => clearInterval(pollTimer))
 
 async function pollCSV() {
   try {
-    // Descargar CSV de log_eventos
     const rawRows = await fetchCSV(`${BASE}/log_eventos.csv`)
-    const rows = rawRows.map(cleanRow)  // Normalizar espacios
+    const rows = rawRows.map(cleanRow)
 
-    // Si no hay nuevas filas desde último poll, salir
     if (rows.length <= lastRowCount) return
 
-    // Extraer solo las filas nuevas
     const nuevas = rows.slice(lastRowCount)
     lastRowCount = rows.length
 
-    // Procesar cada evento nuevo (actualiza nodoEstado, cytoscape)
     nuevas.forEach(procesarEvento)
-    
-    // Forzar reactividad sobre el array completo
     eventos.value = [...rows]
-    
-    // Actualizar datos en los 3 gráficos (infectados, patch, intenciones)
     updateCharts(rows)
 
-    // Redimensionar Cytoscape si la red cambió
     if (cyComp) cyComp.resizeFit()
   } catch (e) {
-    console.warn('⚠️ Poll error:', e.message)
+    console.warn('Poll error:', e.message)
   }
 }
 
-/**
- * Procesa un evento individual del log.
- */
 function procesarEvento(ev) {
   const nodo = ev.nodo
   const evento = ev.evento
   const desde = ev.desde
 
-  // Guard: evento inválido
   if (!nodo || nodo === '-') return
 
-  // ─── INFECCIÓN: marca nodo como infectado ────────────────────
   if (evento === 'Infeccion_Exitosa') {
     if (nodoEstado.value[nodo]) {
       nodoEstado.value[nodo].infected = true
       nodoEstado.value[nodo].isolated = false
     }
-    updateCyNode(nodo, true, false)  // Actualiza visualización
+    updateCyNode(nodo, true, false)
 
-    // Si hay origen de ataque, dibujar arco rojo
     if (desde && desde !== '-') {
       cyComp?.markAttackEdge(desde, nodo)
     }
   }
 
-  // ─── AISLAMIENTO: marca nodo como aislado ────────────────────
   if (evento === 'AISLADO' || evento === 'AISLADO_EMERGENCIA' || evento === 'Aislamiento_Contencion') {
     if (nodoEstado.value[nodo]) {
       nodoEstado.value[nodo].infected = true
       nodoEstado.value[nodo].isolated = true
     }
-    updateCyNode(nodo, true, true)  // Muestra ícono de aislado
+    updateCyNode(nodo, true, true)
   }
 
-  // ─── PARCHEO: marca nodo como sano ───────────────────────────
   if (evento === 'PARCHEO') {
     if (nodoEstado.value[nodo]) {
       nodoEstado.value[nodo].infected = false
       nodoEstado.value[nodo].isolated = false
     }
-    updateCyNode(nodo, false, false)  // Restaura ícono de sano
+    updateCyNode(nodo, false, false)
   }
 }
 
-/**
- * Actualiza series de datos en los 3 gráficos ECharts.
- */
 function updateCharts(rows) {
-  // Guard: instancias aún no inicializadas
   if (!ecInfectados || !ecPatch || !ecIntenciones) return
 
-  // Extraer lista única de ciclos en orden
   const ciclosSet = [...new Set(rows.map(r => r.ciclo))].sort((a, b) => parseInt(a) - parseInt(b))
 
-  // ─── SERIE 1: Infectados por ciclo ────────────────────────────
   const infectSerie = ciclosSet.map(c => {
     const filasC = rows.filter(r => r.ciclo === c && r.infectados_total && r.infectados_total !== '-')
     if (!filasC.length) return null
     return parseInt(filasC[filasC.length - 1].infectados_total)
   })
 
-  // ─── SERIE 2: Patch level promedio por ciclo ──────────────────
   const patchRows = rows.filter(r => r.evento === 'PARCHEO')
   const patchCiclos = [...new Set(patchRows.map(r => r.ciclo))].sort((a, b) => parseInt(a) - parseInt(b))
   const patchSerie = patchCiclos.map(c => {
@@ -340,13 +397,11 @@ function updateCharts(rows) {
     return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : 0
   })
 
-  // ─── SERIE 3: Intenciones BDI por ciclo (barras apiladas) ──────
   const spreadSerie = ciclosSet.map(c => rows.filter(r => r.ciclo === c && r.intencion === 'spread').length)
   const patchISerie = ciclosSet.map(c => rows.filter(r => r.ciclo === c && r.intencion === 'patch').length)
   const isolateSerie = ciclosSet.map(c => rows.filter(r => r.ciclo === c && (r.intencion === 'isolated' || r.intencion === 'isolate')).length)
   const normalSerie = ciclosSet.map(c => rows.filter(r => r.ciclo === c && r.intencion === 'normal').length)
 
-  // Actualizar gráficos con nuevas series
   ecInfectados.setOption({ xAxis: { data: ciclosSet }, series: [{ data: infectSerie }] })
   ecPatch.setOption({ xAxis: { data: patchCiclos }, series: [{ data: patchSerie }] })
   ecIntenciones.setOption({
@@ -375,41 +430,24 @@ function badgeClass(evento) {
   if (evento === 'PARCHEO') return 'badge-green'
   return 'badge-gray'
 }
+function parseNumber(value) {
+  if (value === '' || value === null || value === undefined) {
+    return null
+  }
+
+  const n = Number(value)
+  return Number.isNaN(n) ? null : n
+}
 </script>
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500;600&display=swap');
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-
-.dashboard {
-  min-height: 100vh;
-  background: #0a0f1e;
-  color: #e2e8f0;
-  font-family: 'Inter', sans-serif;
-  display: flex;
-  flex-direction: column;
-}
-
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 24px;
-  background: #0d1526;
-  border-bottom: 1px solid #1e293b;
-}
-
-.header-tag {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  color: #f97316;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  display: block;
-  margin-bottom: 2px;
-}
-
+.dashboard { min-height: 100vh; background: #0a0f1e; color: #e2e8f0; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; }
+.header { display: flex; align-items: center; justify-content: space-between; padding: 14px 24px; background: #0d1526; border-bottom: 1px solid #1e293b; }
+.header-actions { display: flex; align-items: center; gap: 14px; }
+.header-tag { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #f97316; letter-spacing: 0.1em; text-transform: uppercase; display: block; margin-bottom: 2px; }
 .header-title { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; color: #f1f5f9; }
 .header-stats { display: flex; align-items: center; gap: 24px; }
 .stat { text-align: center; }
@@ -417,20 +455,34 @@ function badgeClass(evento) {
 .stat-label { display: block; font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
 .stat.danger .stat-value { color: #ef4444; }
 .stat.warn .stat-value { color: #f97316; }
-
 .pulse-dot { width: 10px; height: 10px; border-radius: 50%; }
 .pulse-dot.active { background: #22c55e; box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.3); animation: pulse 1.5s infinite; }
 .pulse-dot.inactive { background: #334155; }
 @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.3) } 50% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.1) } }
 
+.report-button {
+  border: 1px solid #334155;
+  background: linear-gradient(135deg, #f97316, #fb7185);
+  color: #0a0f1e;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 10px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(249, 115, 22, 0.18);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+.report-button:hover { transform: translateY(-1px); filter: brightness(1.03); box-shadow: 0 14px 28px rgba(249, 115, 22, 0.24); }
+.report-button:active { transform: translateY(0); }
+
 .map-section { padding: 16px 24px 8px; }
 .section-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #475569; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; }
-
 .legend { display: flex; gap: 16px; margin-top: 8px; flex-wrap: wrap; }
 .leg-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #64748b; }
 .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-
-.chart-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #475569; text-transform: uppercase; letter-spacing: 0.08em; }
 
 .row-infected td { background: rgba(239, 68, 68, 0.07); }
 .row-isolated td { background: rgba(30, 41, 59, 0.5); }
@@ -443,4 +495,21 @@ function badgeClass(evento) {
 .badge-orange { background: rgba(249, 115, 22, 0.2); color: #fb923c; }
 .badge-green { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
 .badge-gray { background: rgba(51, 65, 85, 0.5); color: #64748b; }
+
+.report-overlay { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 24px; background: rgba(2, 6, 23, 0.72); backdrop-filter: blur(8px); }
+.report-panel { width: min(1180px, 100%); max-height: min(84vh, 900px); overflow: hidden; display: flex; flex-direction: column; gap: 16px; background: linear-gradient(180deg, #0d1526 0%, #0a1020 100%); border: 1px solid #334155; border-radius: 18px; box-shadow: 0 30px 80px rgba(2, 6, 23, 0.6); padding: 20px; }
+.report-panel-header { display: flex; align-items: start; justify-content: space-between; gap: 16px; }
+.report-kicker { font-family: 'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #f97316; margin-bottom: 4px; }
+.report-panel h2 { font-size: 22px; font-weight: 600; color: #f8fafc; }
+.report-close { border: 1px solid #334155; background: transparent; color: #cbd5e1; border-radius: 999px; padding: 9px 14px; cursor: pointer; font-family: 'JetBrains Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; }
+.report-table-frame { overflow: auto; border: 1px solid #1e293b; border-radius: 14px; background: rgba(15, 23, 42, 0.5); }
+.report-table { width: 100%; border-collapse: collapse; min-width: 980px; font-family: 'JetBrains Mono', monospace; }
+.report-table th, .report-table td { padding: 14px 16px; border-bottom: 1px solid #1e293b; text-align: left; }
+.report-table th { position: sticky; top: 0; background: #0d1526; color: #94a3b8; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; }
+.report-table td { color: #e2e8f0; font-size: 12px; }
+.report-state { padding: 28px; text-align: center; color: #cbd5e1; border: 1px dashed #334155; border-radius: 14px; }
+.report-state.error { color: #fca5a5; }
+
+.report-fade-enter-active, .report-fade-leave-active { transition: opacity 0.18s ease; }
+.report-fade-enter-from, .report-fade-leave-to { opacity: 0; }
 </style>
