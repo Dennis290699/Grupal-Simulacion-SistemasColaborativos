@@ -1,0 +1,325 @@
+\documentclass{ieeeaccess}
+\IEEEoverridecommandlockouts
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{subcaption}
+\usepackage{xspace}
+\usepackage{multirow}
+\usepackage{bigstrut}
+\usepackage[spanish,es-tabla]{babel}
+\usepackage{listings}
+\usepackage{url}
+
+% Configuración del lenguaje español para Listings y otros paquetes
+\renewcommand\IEEEkeywordsname{Palabras clave}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+% Configuración del formato para el código de simulación en el Anexo
+\lstset{
+  language=java, % Usamos Java como base para GAML
+  basicstyle=\ttfamily\scriptsize,
+  numbers=left,
+  numberstyle=\tiny,
+  stepnumber=1,
+  numbersep=5pt,
+  backgroundcolor=\color{gray!5},
+  showspaces=false,
+  showstringspaces=false,
+  showtabs=false,
+  frame=single,
+  rulecolor=\color{gray!30},
+  tabsize=2,
+  captionpos=b,
+  breaklines=true,
+  breakatwhitespace=false,
+  keywordstyle=\color{blue}\bfseries,
+  commentstyle=\color{green!50!black}\itshape,
+  stringstyle=\color{purple},
+  morekeywords={species,global,init,create,from,read,write,file,geometry,envelope,float,int,bool,list,string,reflex,when,ask,where,each,first,empty,one_of,flip,rnd,aspect,draw,circle,square,color,border,line,location,font,experiment,display,monitor,output,type,value},
+}
+
+\begin{document}
+\history{Fecha de publicación junio 16, 2026, fecha de versión actual junio 16, 2026.}
+\doi{XX.XXXX/XXXX.2026.DOI}
+
+\title{Simulación y Contención de Ransomware WannaCry en Redes Universitarias: Un Enfoque Basado en Agentes con GAMA Platform}
+
+\author{\uppercase{Byron Paul Condolo Narvaez}\authorrefmark{1}, 
+\uppercase{Kelly Denisse Ledesma Aguilar}\authorrefmark{1}, 
+\uppercase{Bryan Eduardo Loya Cadena}\authorrefmark{1}, y 
+\uppercase{Dennis Adrian Trujillo Vistin}\authorrefmark{1}}
+
+\address[1]{Facultad de Ingeniería y Ciencias Aplicadas, Universidad Central del Ecuador, Quito 170521, Ecuador (e-mail: bpcondolo@uce.edu.ec, kdledesma@uce.edu.ec, beloya@uce.edu.ec, datrujillo@uce.edu.ec)}
+
+\tfootnote{Este trabajo de investigación y desarrollo fue elaborado por el Grupo 3 para la asignatura de Sistemas Colaborativos de la carrera de Computación, Facultad de Ingeniería y Ciencias Aplicadas de la Universidad Central del Ecuador (UCE).}
+
+\markboth
+{Grupo3 \headeretal: Simulación y Contención de WannaCry en Redes Universitarias}
+{Grupo3 \headeretal: Simulación y Contención de WannaCry en Redes Universitarias}
+
+\corresp{Autor de correspondencia: Dennis Adrian Trujillo Vistin (e-mail: datrujillo@uce.edu.ec).}
+
+\begin{abstract}
+El presente trabajo de investigación abordó la problemática de la ciberseguridad en infraestructuras académicas frente a amenazas cibernéticas autopropagables. El objetivo principal consistió en desarrollar una simulación basada en agentes empleando la plataforma GAMA para analizar la dinámica de propagación de un ataque de ransomware inspirado en WannaCry en una red local universitaria y evaluar una estrategia de contención. La metodología empleada incluyó el modelado espacial de siete laboratorios de computación interconectados mediante archivos vectoriales de QGIS, y la implementación de reglas probabilísticas de transmisión lateral basadas en la exposición de puertos y niveles de actualización del sistema operativo. Los resultados demostraron una rápida saturación de la infraestructura en ausencia de controles. No obstante, tras activar un protocolo de contingencia automatizado basado en el aislamiento lógico al alcanzar un umbral crítico del treinta por ciento de equipos infectados, se consiguió proteger el setenta por ciento restante de la red. Finalmente, se concluyó que la topología de la red influyó de forma directa en la velocidad de dispersión de la amenaza y que la segmentación y el aislamiento temprano resultaron altamente eficientes como defensas activas.
+\end{abstract}
+
+\begin{keywords}
+Simulación Basada en Agentes, Ciberseguridad en LAN, Ransomware WannaCry, GAMA Platform, Protocolos de Contingencia.
+\end{keywords}
+
+\maketitle
+
+% Secciones Modulares en Español
+\input{secciones/01-introduccion.tex}
+\input{secciones/02-estado-arte.tex}
+\input{secciones/03-metodologia.tex}
+\input{secciones/04-arquitectura-instanciada.tex}
+\input{secciones/05-resultados-experimentales.tex}
+\input{secciones/06-conclusiones.tex}
+
+% Estilo de Bibliografía y Archivo .bib
+\bibliographystyle{plain}
+\bibliography{references}
+
+% Biografías de los Autores (Placeholders)
+\input{secciones/07-biografias.tex}
+
+\newpage
+\onecolumn
+\appendix[Código Fuente de Simulación GAML]
+\label{appendix:gaml_code}
+En este anexo se presenta el código de la simulación desarrollado para la plataforma GAMA utilizando el lenguaje GAML (\textit{GAMA Modeling Language}). Este código carga los archivos vectoriales geográficos, inicializa los agentes de red con sus configuraciones de vulnerabilidad y puertos, y ejecuta el motor de propagación del ataque junto con el reflex del monitor de contingencia automatizado.
+
+\begin{lstlisting}[caption={InfeccionRedes.gaml - Código fuente de la simulación en GAMA Platform}, label={list:gaml_code}]
+model InfeccionRedesGIS
+
+species sala {
+    string nombre;
+    
+    aspect default {
+        draw shape color: rgb(165, 75, 75, 100) border: #black;
+    }
+}
+
+global {
+    // Capas GIS vectoriales de entrada
+    file nodos_file <- file("../includes/nodos.shp");
+    file conexiones_file <- file("../includes/conexiones.shp");
+    file salas_file <- file("../includes/sala.shp");
+    
+    // Adaptación del entorno de simulación a los límites espaciales
+    geometry shape <- envelope(nodos_file);
+    float firewall_strength <- 0.70;
+    int cooldown_min <- 3;
+    int cooldown_max <- 8;
+    
+    // Variables de control del Protocolo de Contingencia
+    bool contingencia_activada <- false;
+    float umbral_alerta <- 0.30; // 30% de equipos infectados
+    
+    init {
+        // 1. Instanciación espacial de las Salas (Laboratorios)
+        create sala from: salas_file {
+            nombre <- string(read("nombre"));
+        }
+        
+        // 2. Instanciación y parametrización de los Nodos de Red
+        create computer from: nodos_file {
+            id <- int(read("id"));
+            nombre <- string(read("nombre"));
+            string tipoNodo <- string(read("tipo"));
+            
+            // Configuración del rol lógico de red
+            is_server <- (tipoNodo = "server");
+            is_internet <- (tipoNodo = "internet");
+            is_firewall <- (tipoNodo = "firewall");
+            is_switch <- (tipoNodo = "switch");
+            
+            if is_internet {
+                infected <- true; // Origen de la amenaza externa
+            } else {
+                infected <- false;
+            }
+            
+            secured <- false;
+            isolated <- false;
+            patch_level <- rnd(100); // Nivel de actualización aleatorio
+            
+            // Puertos abiertos según rol
+            if (tipoNodo = "pc" or is_server or is_switch or is_firewall) {
+                open_ports <- [445, 3389, 80];
+            } else {
+                open_ports <- [];
+            }
+            
+            write "NODO CARGADO -> ID: " + string(id) + " | Nombre: " + nombre + " | Tipo: " + tipoNodo;
+        }
+        
+        // 3. Creación de la Topología Lógica mediante Enlaces de Red
+        create connection from: conexiones_file {
+            int o <- int(read("origen"));
+            int d <- int(read("destino"));
+            
+            // Asociación de agentes por clave de adyacencia
+            list<computer> so <- computer where (each.id = o);
+            list<computer> de <- computer where (each.id = d);
+            
+            if (!empty(so) and !empty(de)) {
+                source <- first(so);
+                target <- first(de);
+                geom <- shape;
+                write "CONEXIÓN OK: " + string(o) + " -> " + string(d);
+            } else {
+                write "CONEXION INVALIDA: " + string(o) + " -> " + string(d);
+            }
+        }
+        
+        write "=== RESUMEN DE INICIALIZACIÓN ===";
+        write "Total Nodos cargados: " + length(computer);
+        write "Total Enlaces cargados: " + length(connection);
+    }
+    
+    // Reflex del Monitor de Red para el Protocolo de Contingencia
+    reflex monitor_red when: !contingencia_activada {
+        int total_hosts <- length(computer where (each.tipo = "pc" or each.is_server));
+        int infectados <- length(computer where (each.infected and (each.tipo = "pc" or each.is_server)));
+        
+        if (total_hosts > 0 and (infectados / total_hosts) >= umbral_alerta) {
+            contingencia_activada <- true;
+            write "¡ALERTA CRÍTICA! Infección alcanzó " + string(infectados) + " de " + string(total_hosts) + " hosts (" + string((infectados / total_hosts)*100) + "%). Activando contingencia...";
+            
+            // Cuarentena e inmunización automática de nodos sanos
+            ask computer where (!each.infected and (each.tipo = "pc" or each.is_server)) {
+                isolated <- true;
+                secured <- true;
+                patch_level <- 100;
+                open_ports <- open_ports - 445; // Cierre del puerto vulnerable SMB
+                write "NODO PROTEGIDO -> " + nombre + " [Aislado y Parcheado]";
+            }
+        }
+    }
+}
+
+species computer {
+    int id;
+    string nombre;
+    bool is_server <- false;
+    bool is_internet <- false;
+    bool is_firewall <- false;
+    bool is_switch <- false;
+    bool infected <- false;
+    bool secured <- false;
+    bool isolated <- false;
+    list<int> open_ports <- [];
+    int patch_level <- 0;
+    int cooldown <- 0;
+    
+    reflex activity {
+        if cooldown > 0 {
+            cooldown <- cooldown - 1;
+        }
+    }
+    
+    // Motor de propagación probabilística del ransomware
+    reflex spread when: (infected and !isolated) {
+        if cooldown > 0 { return; }
+        
+        // Búsqueda de enlaces activos no aislados
+        list<connection> outs <- connection where (
+            (each.source = self or each.target = self)
+        );
+        
+        if empty(outs) { return; }
+        
+        connection c <- one_of(outs);
+        computer target_node;
+        
+        if c.source = self {
+            target_node <- c.target;
+        } else {
+            target_node <- c.source;
+        }
+        
+        // Si el objetivo está aislado o ya asegurado, abortar ataque
+        if (target_node.isolated or target_node.secured or target_node.infected) {
+            return;
+        }
+        
+        float p <- 0.35; // Probabilidad de infección base (p0)
+        
+        // Mitigación por Firewall
+        if target_node.is_firewall {
+            p <- p * (1.0 - firewall_strength);
+        }
+        
+        // Mitigación por Parcheo del puerto SMB 445
+        if (445 in target_node.open_ports) {
+            p <- p * (1.0 - target_node.patch_level / 150.0);
+        } else {
+            p <- 0.0; // Puerto cerrado
+        }
+        
+        // Ejecución de la transmisión probabilística
+        if flip(p) {
+            target_node.infected <- true;
+            write "¡DETECCIÓN! El nodo [" + target_node.nombre + "] ha sido INFECTADO por [" + self.nombre + "]";
+        }
+        
+        cooldown <- rnd(5) + 2; // Cooldown para evitar saturación del motor
+    }
+    
+    aspect default {
+        float tam_nodo <- 0.2;
+        
+        if infected {
+            draw circle(tam_nodo) color: #red;
+        } else if is_firewall {
+            draw square(tam_nodo) color: #blue;
+        } else if is_switch {
+            draw square(tam_nodo) color: #gray;
+        } else if is_internet {
+            draw circle(tam_nodo) color: #yellow;
+        } else if is_server {
+            draw square(tam_nodo) color: #purple;
+        } else {
+            draw circle(tam_nodo) color: #green;
+        }
+        
+        draw string(nombre) at: location + {0, -tam_nodo * 1.5} color: #black font: font("SansSerif", 8, #bold);
+    }
+}
+
+species connection {
+    computer source;
+    computer target;
+    geometry geom;
+    
+    aspect default {
+        if geom != nil {
+            draw geom color: #orange width: 5;
+        } else if (source != nil and target != nil) {
+            draw line([source.location, target.location]) color: #orange width: 0.4;
+        }
+    }
+}
+
+experiment Infeccion type: gui {
+    output {
+        display mapa_red {
+            species sala;
+            species connection;
+            species computer;
+        }
+        monitor "Equipos Infectados" value: length(computer where each.infected);
+        monitor "Equipos Sanos" value: length(computer where !each.infected);
+    }
+}
+\end{lstlisting}
+
+\EOD
+\end{document}

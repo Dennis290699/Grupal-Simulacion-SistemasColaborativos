@@ -1,0 +1,48 @@
+\section{Resultados Experimentales y Discusión}
+\label{sec:resultados}
+Se ejecutaron experimentos sistemáticos utilizando el motor de simulación de GAMA Platform para evaluar el comportamiento dinámico de la infección lateral bajo diferentes configuraciones defensivas. Para ello, se definieron cinco escenarios de prueba basados en parámetros específicos de ciberdefensa.
+
+\subsection{Definición de Escenarios de Simulación}
+A continuación, se describen las dinámicas observadas en cada uno de los escenarios definidos:
+
+\begin{enumerate}
+    \item \textbf{E1 — Escenario Real 2017 (WannaCry Real):} Este escenario representa un entorno universitario típico sin preparación ante incidentes. Se configuró con una fuerza del firewall débil ($\alpha_{fw} = 0,1$), nivel de parcheo inicial mínimo ($L_{patch} = 5\%$) y un umbral de contención bajo ($Th = 5\%$). El malware WAN logró una intrusión casi inmediata (ciclo 2). Debido a la baja actualización de los sistemas y la nula respuesta reactiva del coordinador global, la infección se expandió de forma exponencial. Al ciclo 38, el $100\%$ de los hosts susceptibles resultaron infectados (\texttt{infected}\allowbreak\texttt{=}\allowbreak\texttt{true}), validando el brote real reportado por la literatura científica en mayo de 2017 \cite{enisa2017wannacry}.
+    \item \textbf{E2 — Escenario de Solo Firewall:} Evalúa la efectividad de contar con defensas perimetrales fuertes ($\alpha_{fw} = 0,9$) pero manteniendo estaciones internas desactualizadas ($L_{patch} = 5\%$) y baja contención reactiva ($Th = 10\%$). La robustez del Firewall retrasó la intrusión externa hasta el ciclo 14. No obstante, una vez que el primer host del laboratorio fue comprometido, la falta de parches y la baja capacidad de aislamiento permitieron que la infección avanzara en cascada lateral. Al final de la simulación, se registró un $94,7\%$ de nodos infectados, demostrando que la seguridad de perímetro es insuficiente ante movimientos laterales en intranets planas.
+    \item \textbf{E3 — Escenario de Solo Parches:} Modela una red con terminales actualizadas ($L_{patch} = 80\%$, $Th = 20\%$) pero con un cortafuegos vulnerable ($\alpha_{fw} = 0,1$). El malware superó el Firewall perimetral en el ciclo 3. Sin embargo, al realizar los escaneos internos hacia el puerto TCP 445 de los vecinos locales, el alto nivel de parches redujo la probabilidad de éxito de transmisión a valores insignificantes ($P \approx 0,002$ según la Ecuación \ref{eq:probability_combined}). Las transmisiones fallaron de manera sistemática, extinguiendo la propagación local. La tasa final de infección no superó el $4,5\%$ de la red LAN, comprobando la hipótesis de que mantener terminales actualizadas es el mecanismo de ciberdefensa más crítico frente a exploits de red.
+    \item \textbf{E4 — Escenario de SOC Activo (Centro de Operaciones de Seguridad):} Simula la intervención activa del equipo de respuesta ante incidentes. Se estableció un cortafuegos medio ($\alpha_{fw} = 0,5$), equipos parcialmente parcheados ($L_{patch} = 30\%$) y un umbral de contención rápida alto ($Th = 80\%$). Tras el compromiso inicial en el ciclo 4, el coordinador global BDI detectó los nodos comprometidos en el ciclo 18 y disparó de forma selectiva el aislamiento lógico (\texttt{isolated} / \texttt{isolate}) de los equipos infectados sanos circunvecinos. Simultáneamente, se forzó el blindaje dinámico incrementando el \texttt{patch\_level} al $100\%$ en las terminales sanas. La curva de infectados se aplanó por completo en el ciclo 20, salvando de la infección al $74,2\%$ de la red LAN.
+    \item \textbf{E5 — Escenario de Red Segura:} Representa una red académica completamente protegida bajo políticas estrictas de seguridad de la información. Se configuraron defensas al nivel máximo ($\alpha_{fw} = 1,0$, $L_{patch} = 100\%$, $Th = 90\%$). En este caso, la probabilidad de intrusión WAN y de propagación lateral decayó a cero en el primer instante. Ningún dispositivo resultó comprometido, alcanzando un estado de seguridad absoluta.
+\end{enumerate}
+
+\subsection{Análisis Comparativo y Discusión Académica}
+La comparación cuantitativa de los resultados de los cinco escenarios experimentales se presenta en la Tabla \ref{tab:comparativo_escenarios}, la cual sistematiza el comportamiento del modelo frente a las combinaciones defensivas.
+
+\begin{table*}[!t]
+\caption{Métricas comparativas entre los escenarios de simulación BDI}
+\label{tab:comparativo_escenarios}
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|l|}
+\hline
+\textbf{Escenario} & \textbf{FW} ($\alpha_{fw}$) & \textbf{Parche} ($L_{patch}$) & \textbf{Cont.} ($Th$) & \textbf{1ra Inf.} & \textbf{Tasa Final} & \textbf{Estado Operativo Final} \\ \hline
+E1 — Real 2017 & 0,1 & 5\% & 5\% & Ciclo 2 & 100\% & Colapso total de la red LAN \\ \hline
+E2 — Solo FW & 0,9 & 5\% & 10\% & Ciclo 14 & 94,7\% & Inoperable (propagación tardía) \\ \hline
+E3 — Solo Patch & 0,1 & 80\% & 20\% & Ciclo 3 & 4,5\% & Totalmente Resiliente (inmunidad) \\ \hline
+E4 — SOC Activo & 0,5 & 30\% & 80\% & Ciclo 4 & 25,8\% & Resiliente y operativo (aislado) \\ \hline
+E5 — Red Segura & 1,0 & 100\% & 90\% & N/A & 0\% & Seguro absoluto (defensa máxima) \\ \hline
+\end{tabular}
+\end{center}
+\end{table*}
+
+Al contrastar estas métricas con las dinámicas macroscópicas y las curvas de propagación generadas, se constata una correlación directa con la teoría de redes complejas. La rápida transición exponencial hacia la saturación del Escenario E1 valida las advertencias de Pastor-Satorras y Vespignani \cite{pastorsatorras2001epidemic}: en redes estructuradas sin control local de puertos, los hubs centralizados (como el Switch Central) multiplican los intentos de infección propagando la epidemia. 
+
+Por otro lado, la contención rápida lograda en el escenario E4 fundamenta la investigación de Lahari y Kumar \cite{lahari2025optimal}. La toma de decisiones cognitivas a nivel de host en la arquitectura BDI permite que un agente se autoproteja (\texttt{des\_aislarse} y \texttt{des\_parchear}) en el momento que percibe una amenaza en su entorno inmediato. Esto evita la propagación sin sobrecargar al sistema, aislando localmente el segmento comprometido. 
+
+Asimismo, los escenarios confirman la relevancia de la ciberseguridad en capas detallada por Padilla et al. \cite{padilla2025serdux}: la seguridad en el perímetro (E2) es fundamental para demorar el ingreso inicial y dar tiempo de reacción a las defensas locales, pero la resiliencia a largo plazo de la intranet depende enteramente de la actualización persistente en los terminales (E3) y de protocolos automáticos de mitigación (E4).
+
+Las curvas temporales y las métricas detalladas de contención generadas por la simulación se visualizan en el dashboard Vue 3 y se describen formalmente en la Figura \ref{fig:curvas_dashboard}.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{assets/curvas_simulacion.png}
+\caption{Gráficas temporales de hosts infectados, patch level e intenciones BDI en el dashboard Vue 3.}
+\label{fig:curvas_dashboard}
+\end{figure}
