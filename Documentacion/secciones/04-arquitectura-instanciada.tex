@@ -1,31 +1,123 @@
-\section{Architecture instantiated}\label{sec:proposed-architectures}
-For the development of this proposal, two neural network architectures have been proposed by instantiating the architectural model defined in the previous section: instance with One-Class classification (D-ADV-OC) and instance with Multi-Class classification (D-ADV-MC). These architectures are able to detect specific behaviors that are part of the training data set and abnormal behaviors from training normal data, respectively. Details about the classification and training stages, as well as some important configuration parameters of each of the architecture instances, are explained in the subsections \ref{subsec:arq-mcc} and \ref{subsec:arq-occ}.
+\section{Arquitectura de Red Instanciada y Dashboard de Monitoreo}
+\label{sec:arquitectura}
+La infraestructura de red simulada en el experimento modela de forma precisa la topología lógica y la distribución espacial de los activos de tecnologías de la información de un campus universitario. El entorno representa un escenario de alta densidad de hosts que interactúan a través de un esquema jerárquico centralizado, complementado por una herramienta externa de monitoreo y visualización.
 
-\subsection{Multi-activity classification (D-ADV-MC)}\label{subsec:arq-mcc}
+\subsection{Especificación de Requerimientos del Sistema}
+\label{subsec:requerimientos}
+El diseño y desarrollo de la plataforma integrada de simulación y visualización se rigió bajo un conjunto de especificaciones técnicas orientadas a garantizar la fidelidad del modelado de propagación y la eficiencia de la visualización interactiva. A continuación, se desglosan los requerimientos funcionales y no funcionales que estructuran el sistema.
 
-\begin{figure*}[htbp]
-	\centerline{\includegraphics[width=0.9\textwidth]{images/placeholder_figure.pdf}}
-	\caption[Data flow in the D-ADV-MC]{Data flow of the proposed D-ADV. The D-ADV architecture is mainly divided into two parts, the D-ADV-MC representation stage where the displacement is calculated using the ADV descriptor from a sequence of images and their optical flow motion. The second stage defines the classifier using CNN classifiers and a fully connected layer to predict the class.}
-	\label{fig:pipeline}
-\end{figure*}
-The architecture instantiated from the architectural model proposed in this paper for the classification of multiple group activities can be seen in Figure \ref{fig:pipeline}. This architecture uses two-stream activity classification and performs a late fusion as discussed in the previous section capable of classifying the previously computed D-ADV images: $LRF$ and $UDF$. The classifier approach is open and allows the use of any CNN architecture (VGG, Resnet, Alexnet, LeNet, etc.). This type of networks typically uses a fully connected layer on the output with a softmax activation function to decide to which class the image corresponds (e.g. objects, locations, poses, etc.). The architecture ignores the individual dense layers. However, the previous layers of the model are concatenated in a late merge with a fusion layer. Finally, we use a fully connected layer with sigmoid activation function to connect the fusion layer and predict multiple classes.
+\subsubsection{Requerimientos Funcionales (RF)}
+Los requerimientos funcionales definen los servicios lógicos obligatorios que el sistema integrado debe ejecutar de forma interactiva y simulada:
+\begin{itemize}
+    \item \textbf{RF-1 (Ingesta de Datos Geoespaciales):} El motor de simulación debe procesar e instanciar capas geográficas vectoriales en formato Shapefile (SHP) que delimiten salas físicas, activos de red y sus enlaces de comunicación física, asegurando la consistencia topológica espacial.
+    \item \textbf{RF-2 (Modelado de Agentes Cognitivos BDI):} Los equipos informáticos individuales deben operar como agentes racionales bajo la arquitectura BDI (creencias, deseos e intenciones), adaptando sus decisiones (aislarse, parcharse, propagar el malware) en función de su percepción local del riesgo y del estado de sus vecinos.
+    \item \textbf{RF-3 (Simulación Probabilística de WannaCry):} El modelo debe simular la propagación del ransomware basándose en factores estocásticos como la exposición de puertos (TCP 445), el nivel de actualización de seguridad del host ($L_{patch}$) y la atenuación defensiva provista por los firewalls.
+    \item \textbf{RF-4 (Protocolos de Contención y Contingencia):} El sistema debe soportar defensas activas descentralizadas (aislamiento voluntario BDI de estaciones) y políticas de contención globales coordinadas por un agente supervisor de red (aislamiento total o selectivo ante umbrales críticos de infección).
+    \item \textbf{RF-5 (Persistencia de Logs y Telemetría):} Durante la ejecución de la simulación, se deben exportar y sobrescribir de forma continua archivos serializados en formato CSV que capturen la telemetría histórica del sistema (estados de los nodos, enlaces activos, eventos específicos de infección y distribución de intenciones lógicas).
+    \item \textbf{RF-6 (Visualización de Topología Dinámica):} El panel web de monitoreo debe renderizar interactivamente la topología lógica de la red universitaria utilizando el framework Cytoscape.js, actualizando de forma dinámica el color de los nodos y arcos según los estados físicos y de aislamiento.
+    \item \textbf{RF-7 (Análisis Temporal Multivariable):} El panel debe proveer widgets visuales interactivos mediante Apache ECharts para graficar en tiempo real: (a) el avance acumulativo de infecciones, (b) el promedio general de parcheo de la LAN, y (c) la distribución apilada de las intenciones BDI de los hosts.
+\end{itemize}
 
-To overcome the challenge of training the architecture with small datasets such as BEHAVE and CAVIAR \cite{fisher2004pets04, blunsden2010behave}, we perform transfer learning of the trained models with the ImageNet dataset \cite{krizhevsky2012imagenet}. As a result, we refined the CNN-based network three times. First, we replaced the fully connected layer of the ImageNet architecture with a new one that matches our classes. Second, we trained a subset of the lower layers because the $LRF$ and $UDF$ inputs are different from the $RGB$ input images expected by ImageNet. Finally, we retrained a subset of the upper layers for fine-tuning.   
+\subsubsection{Requerimientos No Funcionales (RNF)}
+Los requerimientos no funcionales definen las restricciones de rendimiento, calidad y diseño tecnológico impuestas al entorno integrado:
+\begin{itemize}
+    \item \textbf{RNF-1 (Rendimiento y Capacidad):} El motor de simulación en GAMA Platform debe ser capaz de procesar de forma fluida un mínimo de 130 agentes interactivos en tiempo real con un retardo de ciclo inferior a 100 ms. A su vez, el dashboard web de visualización debe sostener una tasa de refresco mínima de 30 FPS.
+    \item \textbf{RNF-2 (Desacoplamiento Arquitectónico Estricto):} La capa de simulación (GAMA Platform, Java) y la capa de visualización (Vue 3, Javascript) deben estar totalmente desacopladas a nivel de llamadas de procesos. La transferencia de datos se debe canalizar exclusivamente a través del sistema de archivos mediante lecturas y escrituras asíncronas asimétricas.
+    \item \textbf{RNF-3 (Frecuencia y Eficiencia de Polling):} El panel frontend debe realizar consultas periódicas (\textit{polling}) a los archivos de telemetría CSV con una frecuencia de 2 segundos. Se debe implementar la técnica de parseo incremental no bloqueante mediante PapaParse para mitigar el consumo de memoria en el navegador.
+    \item \textbf{RNF-4 (Usabilidad y Estética de Grado Industrial):} La interfaz del dashboard debe poseer un diseño oscuro unificado (\textit{dark mode}), con una paleta de colores optimizada para entornos de centros de operaciones de ciberseguridad (SOC), empleando tipografías de alta legibilidad y micro-animaciones indicadoras de estado.
+    \item \textbf{RNF-5 (Portabilidad y Compatibilidad Cross-Browser):} El dashboard frontend debe ser ejecutable sin dependencias del sistema operativo, requiriendo únicamente un navegador moderno compatible con HTML5 y ES6+ (ej., Google Chrome, Mozilla Firefox o Microsoft Edge).
+\end{itemize}
 
-For the training step, we use the binary cross-entropy as an objective function to consider each output class as an independent Bernoulli distribution. For classification, considering that more than one class can be present in a time frame of the sequence, different thresholds $\epsilon_i$ are considered for each output neuron $i$. Here the $\epsilon_i$ thresholds are calculated to be the value that maximises the true positive rate ($TPR$) and minimises the false positive rate ($FPR$), for each class, $C_i$.
+\subsection{Componentes y Dispositivos de la Red}
+La red académica está conformada por un total de 132 equipos informáticos y de comunicaciones distribuidos entre salas y áreas de interconexión. La Tabla \ref{tab:dispositivos} detalla la cantidad y tipo de agentes instanciados en el modelo a partir de los datos geográficos de QGIS.
 
-\subsection{Abnormal Activity Classification (D-ADV-OC)}\label{subsec:arq-occ}
+\begin{table}[htbp]
+\caption{Componentes de red modelados en la simulación}
+\label{tab:dispositivos}
+\begin{center}
+\begin{tabular}{|p{0.20\columnwidth}|c|p{0.52\columnwidth}|}
+\hline
+\textbf{Elemento de Red} & \textbf{Cantidad} & \textbf{Función en el Modelo} \\ \hline
+Laboratorios Físicos & 7 & Delimitación de áreas de trabajo \\ \hline
+Equipos de Escritorio (PC) & 129 & Estaciones de trabajo susceptibles \\ \hline
+Servidor Local (Server) & 1 & Servidor interno de archivos \\ \hline
+Switch Central & 1 & Enrutamiento LAN inter-laboratorio \\ \hline
+Firewall Perimetral & 1 & Filtrado de tráfico externo WAN/LAN \\ \hline
+Fuente Externa (Internet) & 1 & Origen externo del brote del malware \\ \hline
+\textbf{Total Nodos Activos} & \textbf{132} & \textbf{Dispositivos simulados} \\ \hline
+\end{tabular}
+\end{center}
+\end{table}
 
-\begin{figure*}[htbp]
-	\centerline{\includegraphics[width=0.9\textwidth]{images/placeholder_figure.pdf}}
-	\caption[Data flow in the D-ADV for D-ADV-OC]{The data flow of the D-ADV-OC method. The D-ADV-OC architecture is mainly divided into two parts, the D-ADV-OC representation stage where the displacement is calculated using the ADV descriptor from a sequence of data and its optical flow movement. The second stage defines the classifier using CNN classifiers and a fully connected layer to identify the class whether it is normal or abnormal.}
-	\label{fig:pipeline-occ}
-\end{figure*}
+\subsection{Topología Lógica e Infraestructura de Comunicaciones}
+El flujo de comunicaciones de la universidad se estructuró siguiendo una topología en estrella extendida centralizada en el rack de comunicaciones del edificio. Lógicamente, el esquema de interconexión se organiza en cuatro niveles jerárquicos:
 
-This section specifies the instance of the proposed architecture for the detection of anomalous activities in a scene. This architecture uses three data streams: the two motion-related streams from the D-ADV with the $LRF$ and $UDF$ images, and the a third stream associated with the scene context. This architecture has been coined D-ADV-OC, and does not use the individual dense layers as it connects to layers upstream of them. Therefore, the upstream layers in the convnet are concatenated in a late merging manner using a concatenation layer of the two streams. After all, we use a fully connected layer with linear activation to connect the concatenation layer and predict abnormal activity in the cluster. This architecture design is based on recent work by Ruff et al. \cite{pmlr-v80-ruff18a} providing a deep model for training a neural network by minimizing the volume of a hypersphere enclosing the data network representations. This proposal differs from the work of Chalapathy et al. \cite{chalapathy2018anomaly} by combining the ability of CNN-based networks to progressively learn from a subset of images that are the representation of the input data along with the one-class target. Unlike the latter work, which uses auto-encoders to establish the representation of the input data by defining the center of the hypersphere, in this paper some layers of the CNN-based network are trainable, allowing the architecture to continue training both the center and adjusting the radius of the hypersphere. To avoid the problems of large datasets to train our model and with the goal that it can be used for small datasets, transfer learning of the models trained with ImageNet is used.
+\begin{enumerate}
+    \item \textbf{Nivel WAN (Internet):} Representa la conectividad exterior desprotegida, donde se origina la amenaza externa (WannaCry) y se introduce al entorno local.
+    \item \textbf{Nivel Perimetral (Firewall):} Actúa como la única puerta de enlace hacia la intranet universitaria. Filtra las solicitudes del puerto TCP 445 de origen externo en función de su fuerza de bloqueo ($\alpha_{fw}$).
+    \item \textbf{Nivel de Distribución (Switch Central/Rack):} Modela el switch de distribución centralizado en el rack de telecomunicaciones. Todas las comunicaciones que van de un laboratorio a otro, o de los laboratorios hacia el servidor central, transitan por este hub crítico, actuando como amplificador topológico de tráfico lateral.
+    \item \textbf{Nivel de Acceso (Laboratorios y Estaciones):} Dentro de cada uno de los 7 laboratorios, los equipos de computación están conectados mediante una topología física en cadena o cascada (\textit{daisy-chain}) que representa el cableado por canaletas en las filas de las mesas de trabajo. Esto significa que la computadora $PC_{01}$ se conecta al switch de la sala, y de forma sucesiva $PC_{02}$ se conecta a $PC_{01}$, $PC_{03}$ a $PC_{02}$, y así sucesivamente hasta la terminal final. Esta disposición es de suma relevancia para la propagación lateral del ransomware, ya que genera una dependencia física y lógica secuencial directa entre hosts adyacentes.
+\end{enumerate}
 
-The third stream of this architecture is related to the context information in the scene, and at the training step, we calculate the maximum values of the input patterns to normalize the output data, which could be objects, locations, etc. The mean value of the normalization establishes the center of the hypersphere, optimizing the length of the hypersphere radius by means of a fully connected layer at the end of the network.
+El flujo lógico del ingreso de la amenaza y la estructura interna de interconexión de las salas se describe en la Figura \ref{fig:esquema_red}.
 
-The distance combination module (see Figure \ref{fig:pipeline-occ}) uses the weights $w_a$ and $w_c$ for the activity and context loss functions to train the network and calculates the distance of an input pattern to the normal class according to the prediction stage using the following function:
-$$ dist = \frac{1}{n} w_a \sum_{i}{||i_a - c_a ||^2 + w_c|||i_c - c_c |^2 }$$ 
-where $i_a$ is the computed representation for the activities using motion; $i_c$, the computed representation of the context in the scene; and, finally, $c_a$ and $c_c$ are the centers of the hyperspheres. Additionally, in this model, the combination of the weights $w_a$ for behavior and $w_b$ are taken into account.
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{assets/arquitectura_red.png}
+\caption{Arquitectura jerárquica y topología local de la LAN universitaria.}
+\label{fig:esquema_red}
+\end{figure}
+
+\subsection{Codificación Visual y Estados en GAMA}
+Para facilitar el análisis visual en tiempo real de la propagación del ransomware durante la ejecución de la simulación, se implementó una codificación de color y forma para los agentes Nodo, basada en su rol de red y su estado lógico:
+\begin{itemize}
+    \item \textbf{Círculo Rojo:} Nodo infectado por el ransomware (\texttt{infected}\allowbreak\texttt{=}\allowbreak\texttt{true}). Representa un equipo comprometido que propaga activamente la infección lateral.
+    \item \textbf{Círculo Verde:} Estación de trabajo sana y susceptible. Representa a los hosts vulnerables no infectados.
+    \item \textbf{Círculo Amarillo:} Agente de Internet. Representa la fuente externa WAN de la amenaza.
+    \item \textbf{Cuadrado Azul:} Agente Firewall. Representa la barrera de filtrado perimetral.
+    \item \textbf{Cuadrado Gris:} Agente Switch Central. Representa el nodo centralizador LAN.
+    \item \textbf{Cuadrado Púrpura:} Agente Servidor. Representa el centro de datos local de la red universitaria.
+    \item \textbf{Líneas Naranjas:} Agentes Conexión. Representan el cableado físico de comunicaciones activo.
+    \item \textbf{Polígonos Marrones de Fondo:} Agentes Sala. Muestran los límites físicos de los laboratorios sobre el plano.
+\end{itemize}
+
+\subsection{Estructura Física del Proyecto y Esquemas de Datos}
+El diseño modular de la solución se basa en un desacoplamiento de capas entre el simulador y la visualización. La organización física de directorios y los esquemas de intercambio de información mediante archivos CSV y Shapefiles se detallan de forma estructurada en la Tabla \ref{tab:estructura_datos}.
+
+\begin{table}[htbp]
+\caption{Estructura del proyecto y esquemas de datos}
+\label{tab:estructura_datos}
+\begin{center}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{|p{2.8cm}|p{2.8cm}|p{2.9cm}|}
+\hline
+\textbf{Ruta / Archivo} & \textbf{Descripción / Propósito} & \textbf{Esquema / Atributos} \\ \hline
+\texttt{includes/*.shp} & Archivos espaciales vectoriales de QGIS. & Geometrías de nodos, conexiones y salas. \\ \hline
+\texttt{models/*.gaml} & Simulación multiagente y lógica BDI. & Parámetros globales, reflejos y comportamientos. \\ \hline
+\texttt{front/src/*.vue} & Componentes frontend del dashboard Vue 3. & Interfaz de Cytoscape.js y Apache ECharts. \\ \hline
+\texttt{log\_nodos.csv} & Inventario físico estático de la LAN. & \texttt{id}, \texttt{nombre}, \texttt{tipo}. \\ \hline
+\texttt{log\_topologia.csv} & Conexiones de red físicas importadas. & \texttt{origen}, \texttt{destino}, \texttt{tipo\_origen}, \texttt{tipo\_destino}. \\ \hline
+\texttt{log\_general.csv} & Parámetros globales y estado activo LAN. & \texttt{total\_nodos}, \texttt{total\_pcs}, \texttt{firewall\_strength}, etc. \\ \hline
+\texttt{log\_eventos.csv} & Bitácora detallada de transiciones de host. & \texttt{ciclo}, \texttt{nodo}, \texttt{evento}, \texttt{desde}, \texttt{intencion}, etc. \\ \hline
+\texttt{log\_informes.csv} & Reporte consolidado multi-escenario. & \texttt{escenario}, \texttt{ciclo\_inicio}, \texttt{ciclo\_fin}, \texttt{infectados}, etc. \\ \hline
+\texttt{log\_*\_hist.csv} & Auditorías históricas acumuladas. & Estadísticas y eventos multi-corrida. \\ \hline
+\end{tabular}
+\end{center}
+\end{table}
+
+\subsection{Arquitectura de Procesamiento y Flujo del Dashboard}
+La capa de visualización se construyó utilizando el framework reactivo Vue 3, empaquetado mediante Vite, proporcionando un panel de monitoreo dinámico a los administradores de red. El dashboard opera bajo un esquema de comunicación asíncrono desacoplado, lo que significa que no existe un enlace de llamadas directo entre GAMA y el frontend. La comunicación se realiza de manera exclusiva a través del sistema de archivos compartidos.
+
+El flujo de procesamiento de datos se define a través de los siguientes pasos:
+\begin{enumerate}
+    \item \textbf{Generación de Datos en GAMA:} Durante la ejecución de la simulación, el motor de GAML vuelca el estado de la red a los archivos CSV de la carpeta \texttt{public/results/} del dashboard de manera no bloqueante.
+    \item \textbf{Polling e Ingesta de Datos:} La aplicación frontend ejecuta un mecanismo de sondeo de archivos (\textit{polling}) cada 2 segundos. Emplea la librería de parseo asíncrono PapaParse para cargar el contenido de los CSV directamente desde el navegador, convirtiendo las cadenas crudas de caracteres en objetos de datos estructurados tipados de manera eficiente.
+    \item \textbf{Representación Gráfica Interactiva:} Los datos parseados actualizan dinámicamente cuatro áreas de la interfaz:
+    \begin{itemize}
+        \item \textit{Mapa de Red Lógico (Cytoscape.js):} Grafo interactivo que representa la topología. Los nodos cambian de color en tiempo real reflejando su estado BDI (Verde: sano, Rojo: infectado, Negro: aislado lógicamente). Este componente lee las coordenadas espaciales geoespaciales reales provistas por QGIS para fijar la disposición de las estaciones en el panel, respetando la física de los laboratorios.
+        \item \textit{Panel de Gráficas Temporales (ECharts):} Tres gráficos independientes acoplados: (a) línea temporal con área del avance acumulado de hosts infectados por ciclo; (b) curva de evolución del nivel de parche promedio de la LAN; y (c) gráfico de barras apiladas que clasifica a los hosts según su intención BDI activa.
+        \item \textit{Bitácora de Incidentes:} Tabla interactiva que presenta de forma paginada los eventos de infección lateral, el emisor de la carga útil, el receptor, el ciclo temporal y la probabilidad de éxito de transmisión calculada por el motor matemático.
+        \item \textit{Modal de Informe Final Ejecutivo (Report Overlay):} Ventana modal interactiva que recupera el consolidado histórico de ejecuciones desde \texttt{log\_informes.csv} al hacer clic en el botón de la cabecera. Visualiza en formato de tabla el ID de corrida, escenario, nivel máximo de parcheo, tiempo transcurrido (estimado en días y horas mediante la función \texttt{convertirTiempoReal(ciclos)} considerando un mapeo de 1 ciclo = 1 hora), infectados finales, nodos a salvo y variables de ciberdefensa global.
+    \end{itemize}
+\end{enumerate}

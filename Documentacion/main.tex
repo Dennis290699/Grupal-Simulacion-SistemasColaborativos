@@ -1,6 +1,5 @@
 \documentclass{ieeeaccess}
 \IEEEoverridecommandlockouts
-% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
 \usepackage{cite}
 \usepackage{amsmath,amssymb,amsfonts}
 \usepackage{algorithmic}
@@ -11,41 +10,71 @@
 \usepackage{xspace}
 \usepackage{multirow}
 \usepackage{bigstrut}
-\renewcommand\IEEEkeywordsname{keywords}
+\usepackage[spanish,es-tabla]{babel}
+\usepackage{listings}
+\usepackage{url}
 
-\newcommand{\jal}[1]{\textcolor{blue}{\bf{#1}}}
-
+% Configuración del lenguaje español para Listings y otros paquetes
+\renewcommand\IEEEkeywordsname{Palabras clave}
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 
-\begin{document}
-\history{Date of publication xxxx 00, 0000, date of current version xxxx 00, 0000.}
-\doi{10.1109/ACCESS.2017.DOI}
+% Configuración del formato para el código de simulación en el Anexo
+\lstset{
+  language=java, % Usamos Java como base para GAML
+  basicstyle=\ttfamily\scriptsize,
+  numbers=left,
+  numberstyle=\tiny,
+  stepnumber=1,
+  numbersep=5pt,
+  backgroundcolor=\color{gray!5},
+  showspaces=false,
+  showstringspaces=false,
+  showtabs=false,
+  frame=single,
+  rulecolor=\color{gray!30},
+  tabsize=2,
+  captionpos=b,
+  breaklines=true,
+  breakatwhitespace=false,
+  keywordstyle=\color{blue}\bfseries,
+  commentstyle=\color{green!50!black}\itshape,
+  stringstyle=\color{purple},
+  morekeywords={species,global,init,create,from,read,write,file,geometry,envelope,float,int,bool,list,string,reflex,when,ask,where,each,first,empty,one_of,flip,rnd,aspect,draw,circle,square,color,border,line,location,font,experiment,display,monitor,output,type,value},
+}
 
-\title{Architecture for automatic recognition of group activities using local motions and context}
-\author{\uppercase{Luis Felipe Borja-Borja}\authorrefmark{1}, 
-\uppercase{Jorge Azorin-Lopez\authorrefmark{2}, Marcelo Saval-Calvo\authorrefmark{2}, Andres Fuster-Guillo\authorrefmark{2}, and Marc Sebban}\authorrefmark{3}}
-\address[1]{Fac. Ingenier\'{i}a y Ciencias Aplicadas. Universidad Central del Ecuador, Quito, Ecuador  (e-mail: lborja@uce.edu.ec)}
-\address[2]{Computer Technology Department, University of Alicante, Alicante, Spain (e-mail: jazorin@dtic.ua.es, msaval@dtic.ua.es, fuster@dtic.ua.es)}
-\address[3]{Univ. Lyon, Univ. St-Etienne F-42000, UMR CNRS 5516, Laboratoire Hubert-Curien, France (e-mail: marc.sebban@univ-st-etienne.fr)}
-\tfootnote{This work was supported by the Spanish State Research Agency (AEI) under grant PID2020-119144RB-I00 funded by MCIN/AEI/10.13039/501100011033.}
+\begin{document}
+\history{Fecha de publicación junio 16, 2026, fecha de versión actual junio 16, 2026.}
+\doi{XX.XXXX/XXXX.2026.DOI}
+
+\title{Simulación y Contención de Ransomware WannaCry en Redes Universitarias: Un Enfoque Basado en Agentes con GAMA Platform}
+
+\author{\uppercase{Byron Paul Condolo Narvaez}\authorrefmark{1}, 
+\uppercase{Kelly Denisse Ledesma Aguilar}\authorrefmark{1}, 
+\uppercase{Bryan Eduardo Loya Cadena}\authorrefmark{1}, y 
+\uppercase{Dennis Adrian Trujillo Vistin}\authorrefmark{1}}
+
+\address[1]{Facultad de Ingeniería y Ciencias Aplicadas, Universidad Central del Ecuador, Quito 170521, Ecuador (e-mail: bpcondolo@uce.edu.ec, kdledesma@uce.edu.ec, beloya@uce.edu.ec, datrujillov@uce.edu.ec)}
+
+\tfootnote{Este trabajo de investigación y desarrollo fue elaborado por el Grupo 3 para la asignatura de Sistemas Colaborativos de la carrera de Computación, Facultad de Ingeniería y Ciencias Aplicadas de la Universidad Central del Ecuador (UCE).}
 
 \markboth
-{Author \headeretal: Preparation of Papers for IEEE TRANSACTIONS and JOURNALS}
-{Author \headeretal: Preparation of Papers for IEEE TRANSACTIONS and JOURNALS}
+{Grupo3 \headeretal: Simulación y Contención de WannaCry en Redes Universitarias}
+{Grupo3 \headeretal: Simulación y Contención de WannaCry en Redes Universitarias}
 
-\corresp{Corresponding author: Jorge Azorin-Lopez (e-mail: jazorin@ua.es).}
+\corresp{Autores de correspondencia: Luis Felipe Borja Borja (e-mail: lborja@uce.edu.ec), Dennis Adrian Trujillo Vistin (e-mail: datrujillov@uce.edu.ec).}
 
 \begin{abstract}
-Currently, the ability to automatically detect human behavior in image sequences is one of the most important challenges in the area of computer vision. Within this broad field of knowledge, the recognition of activities of people groups in public areas is receiving special attention due to its importance in many aspects including safety and security. This paper proposes a generic computer vision architecture with the ability to learn and recognize different group activities using mainly the local group's movements. Specifically, a multi-stream deep learning architecture is proposed whose two main streams correspond to a representation based on a descriptor capable of representing the trajectory information of a sequence of images as a collection of local movements that occur in specific regions of the scene. Additional information (e.g. location, time, etc.) to strengthen the classification of activities by including it as additional streams.  The proposed architecture is capable of classifying in a robust way different activities of a group as well to deal with the one-class problems. Moreover, the use of a simple descriptor that transforms a sequence of color images into a sequence of two-image streams can reduce the curse of dimensionality using a deep learning approach. The generic deep learning architecture has been evaluated with different datasets outperforming the state-of-the-art approaches providing an efficient architecture for single and multi-class classification problems.
+El presente trabajo de investigación abordó la problemática de la ciberseguridad en infraestructuras académicas frente a amenazas cibernéticas autopropagables. El objetivo principal consistió en desarrollar una simulación basada en agentes empleando la plataforma GAMA para analizar la dinámica de propagación de un ataque de ransomware inspirado en WannaCry en una red local universitaria y evaluar una estrategia de contención. La metodología empleada incluyó el modelado espacial de siete laboratorios de computación interconectados mediante archivos vectoriales de QGIS, y la implementación de reglas probabilísticas de transmisión lateral basadas en la exposición de puertos y niveles de actualización del sistema operativo. Los resultados demostraron una rápida saturación de la infraestructura en ausencia de controles. No obstante, tras activar un protocolo de contingencia automatizado basado en el aislamiento lógico al alcanzar un umbral crítico del treinta por ciento de equipos infectados, se consiguió proteger el setenta por ciento restante de la red. Finalmente, se concluyó que la topología de la red influyó de forma directa en la velocidad de dispersión de la amenaza y que la segmentación y el aislamiento temprano resultaron altamente eficientes como defensas activas.
 \end{abstract}
 
 \begin{keywords}
-Neural Network Architecture, One-Class Classification, Multi-Class Classification
+Simulación, Agentes, BDI, Ransomware, Propagación, Ciberseguridad, Telemetría.
 \end{keywords}
+
 \maketitle
 
-% Modular Sections
+% Secciones Modulares en Español
 \input{secciones/01-introduccion.tex}
 \input{secciones/02-estado-arte.tex}
 \input{secciones/03-metodologia.tex}
@@ -53,13 +82,22 @@ Neural Network Architecture, One-Class Classification, Multi-Class Classificatio
 \input{secciones/05-resultados-experimentales.tex}
 \input{secciones/06-conclusiones.tex}
 
-% Bibliography
+% Estilo de Bibliografía y Archivo .bib
 \bibliographystyle{plain}
 \bibliography{references}
 
-% Author Biographies
+% Biografías de los Autores (Placeholders)
 \input{secciones/07-biografias.tex}
 
-\EOD
+\newpage
+\onecolumn
+\appendix[Códigos Fuente de Simulación y Visualización]
+\label{appendix:source_code}
+En este anexo se presentan los códigos fuente de los dos componentes principales de la solución: el modelo de simulación multiagente desarrollado en GAML (Sección \ref{appendix:gaml_code}) y la interfaz de visualización reactiva construida en Vue 3 (Sección \ref{appendix:front_code}).
 
+\input{secciones/apendice-gaml.tex}
+\input{secciones/apendice-vue.tex}
+
+
+\EOD
 \end{document}
