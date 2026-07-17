@@ -1,0 +1,128 @@
+\section{Arquitectura de Red Instanciada y Dashboard de Monitoreo}
+\label{sec:arquitectura}
+La infraestructura de red simulada en el experimento modela de forma precisa la topología lógica y la distribución espacial de los activos de tecnologías de la información de un campus universitario. El entorno representa un escenario de alta densidad de hosts que interactúan a través de un esquema jerárquico centralizado, complementado por una herramienta externa de monitoreo y visualización.
+
+\subsection{Especificación de Requerimientos del Sistema}
+\label{subsec:requerimientos}
+El diseño y desarrollo de la plataforma integrada de simulación y visualización se rigió bajo un conjunto de especificaciones técnicas orientadas a garantizar la fidelidad del modelado de propagación y la eficiencia de la visualización interactiva. A continuación, se desglosan los requerimientos funcionales y no funcionales que estructuran el sistema.
+
+\subsubsection{Requerimientos Funcionales (RF)}
+Los requerimientos funcionales definen los servicios lógicos obligatorios que el sistema integrado debe ejecutar de forma interactiva y simulada:
+\begin{itemize}
+    \item \textbf{RF-1 (Ingesta de Datos Geoespaciales):} El motor de simulación debe procesar e instanciar capas geográficas vectoriales en formato Shapefile (SHP) que delimiten salas físicas, activos de red y sus enlaces de comunicación física, asegurando la consistencia topológica espacial.
+    \item \textbf{RF-2 (Modelado de Agentes Cognitivos BDI):} Los equipos informáticos individuales deben operar como agentes racionales bajo la arquitectura BDI (creencias, deseos e intenciones), adaptando sus decisiones (aislarse, parcharse, propagar el malware) en función de su percepción local del riesgo y del estado de sus vecinos.
+    \item \textbf{RF-3 (Simulación Probabilística de WannaCry):} El modelo debe simular la propagación del ransomware basándose en factores estocásticos como la exposición de puertos (TCP 445), el nivel de actualización de seguridad del host ($L_{patch}$) y la atenuación defensiva provista por los firewalls.
+    \item \textbf{RF-4 (Protocolos de Contención y Contingencia):} El sistema debe soportar defensas activas descentralizadas (aislamiento voluntario BDI de estaciones) y políticas de contención globales coordinadas por un agente supervisor de red (aislamiento total o selectivo ante umbrales críticos de infección).
+    \item \textbf{RF-5 (Persistencia de Logs y Telemetría):} Durante la ejecución de la simulación, se deben exportar y sobrescribir de forma continua archivos serializados en formato CSV que capturen la telemetría histórica del sistema (estados de los nodos, enlaces activos, eventos específicos de infección y distribución de intenciones lógicas).
+    \item \textbf{RF-6 (Visualización de Topología Dinámica):} El panel web de monitoreo debe renderizar interactivamente la topología lógica de la red universitaria utilizando el framework Cytoscape.js, actualizando de forma dinámica el color de los nodos y arcos según los estados físicos y de aislamiento.
+    \item \textbf{RF-7 (Análisis Temporal Multivariable):} El panel debe proveer widgets visuales interactivos mediante Apache ECharts para graficar en tiempo real: (a) el avance acumulativo de infecciones, (b) el promedio general de parcheo de la LAN, y (c) la distribución apilada de las intenciones BDI de los hosts.
+\end{itemize}
+
+\subsubsection{Requerimientos No Funcionales (RNF)}
+Los requerimientos no funcionales definen las restricciones de rendimiento, calidad y diseño tecnológico impuestas al entorno integrado:
+\begin{itemize}
+    \item \textbf{RNF-1 (Rendimiento y Capacidad):} El motor de simulación en GAMA Platform debe ser capaz de procesar de forma fluida un mínimo de 130 agentes interactivos en tiempo real con un retardo de ciclo inferior a 100 ms. A su vez, el dashboard web de visualización debe sostener una tasa de refresco mínima de 30 FPS.
+    \item \textbf{RNF-2 (Desacoplamiento Arquitectónico Estricto):} La capa de simulación (GAMA Platform, Java) y la capa de visualización (Vue 3, Javascript) deben estar totalmente desacopladas a nivel de llamadas de procesos. La transferencia de datos se debe canalizar exclusivamente a través del sistema de archivos mediante lecturas y escrituras asíncronas asimétricas.
+    \item \textbf{RNF-3 (Frecuencia y Eficiencia de Polling):} El panel frontend debe realizar consultas periódicas (\textit{polling}) a los archivos de telemetría CSV con una frecuencia de 2 segundos. Se debe implementar la técnica de parseo incremental no bloqueante mediante PapaParse para mitigar el consumo de memoria en el navegador.
+    \item \textbf{RNF-4 (Usabilidad y Estética de Grado Industrial):} La interfaz del dashboard debe poseer un diseño oscuro unificado (\textit{dark mode}), con una paleta de colores optimizada para entornos de centros de operaciones de ciberseguridad (SOC), empleando tipografías de alta legibilidad y micro-animaciones indicadoras de estado.
+    \item \textbf{RNF-5 (Portabilidad y Compatibilidad Cross-Browser):} El dashboard frontend debe ser ejecutable sin dependencias del sistema operativo, requiriendo únicamente un navegador moderno compatible con HTML5 y ES6+ (ej., Google Chrome, Mozilla Firefox o Microsoft Edge).
+\end{itemize}
+
+\subsection{Componentes y Dispositivos de la Red}
+La red académica está conformada por un total de 132 equipos informáticos y de comunicaciones distribuidos entre salas y áreas de interconexión. La Tabla \ref{tab:dispositivos} detalla la cantidad y tipo de agentes instanciados en el modelo a partir de los datos geográficos de QGIS.
+
+\begin{table}[htbp]
+\caption{Componentes de red modelados en la simulación}
+\label{tab:dispositivos}
+\begin{center}
+\begin{tabular}{|p{0.20\columnwidth}|c|p{0.52\columnwidth}|}
+\hline
+\textbf{Elemento de Red} & \textbf{Cantidad} & \textbf{Función en el Modelo} \\ \hline
+Laboratorios Físicos & 7 & Delimitación de áreas de trabajo \\ \hline
+Equipos de Escritorio (PC) & 129 & Estaciones de trabajo susceptibles \\ \hline
+Servidor Local (Server) & 1 & Servidor interno de archivos \\ \hline
+Switch Central & 1 & Enrutamiento LAN inter-laboratorio \\ \hline
+Firewall Perimetral & 1 & Filtrado de tráfico externo WAN/LAN \\ \hline
+Fuente Externa (Internet) & 1 & Origen externo del brote del malware \\ \hline
+\textbf{Total Nodos Activos} & \textbf{132} & \textbf{Dispositivos simulados} \\ \hline
+\end{tabular}
+\end{center}
+\end{table}
+
+\subsection{Topología Lógica e Infraestructura de Comunicaciones}
+El flujo de comunicaciones de la universidad se estructuró siguiendo una topología en estrella extendida centralizada en el rack de comunicaciones del edificio. Lógicamente, el esquema de interconexión se organiza en cuatro niveles jerárquicos:
+
+\begin{enumerate}
+    \item \textbf{Nivel WAN (Internet):} Representa la conectividad exterior desprotegida, donde se origina la amenaza externa (WannaCry) y se introduce al entorno local.
+    \item \textbf{Nivel Perimetral (Firewall):} Actúa como la única puerta de enlace hacia la intranet universitaria. Filtra las solicitudes del puerto TCP 445 de origen externo en función de su fuerza de bloqueo ($\alpha_{fw}$).
+    \item \textbf{Nivel de Distribución (Switch Central/Rack):} Modela el switch de distribución centralizado en el rack de telecomunicaciones. Todas las comunicaciones que van de un laboratorio a otro, o de los laboratorios hacia el servidor central, transitan por este hub crítico, actuando como amplificador topológico de tráfico lateral.
+    \item \textbf{Nivel de Acceso (Laboratorios y Estaciones):} Dentro de cada uno de los 7 laboratorios, los equipos de computación están conectados mediante una topología física en cadena o cascada (\textit{daisy-chain}) que representa el cableado por canaletas en las filas de las mesas de trabajo. Esto significa que la computadora $PC_{01}$ se conecta al switch de la sala, y de forma sucesiva $PC_{02}$ se conecta a $PC_{01}$, $PC_{03}$ a $PC_{02}$, y así sucesivamente hasta la terminal final. Esta disposición es de suma relevancia para la propagación lateral del ransomware, ya que genera una dependencia física y lógica secuencial directa entre hosts adyacentes.
+\end{enumerate}
+
+El flujo lógico del ingreso de la amenaza y la estructura interna de interconexión de las salas se describe en la Figura \ref{fig:esquema_red}.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{assets/arquitectura_red.png}
+\caption{Arquitectura jerárquica y topología local de la LAN universitaria.}
+\label{fig:esquema_red}
+\end{figure}
+
+\subsection{Codificación Visual y Estados en GAMA}
+Para facilitar el análisis visual en tiempo real de la propagación del ransomware durante la ejecución de la simulación, se implementó una codificación de color y forma para los agentes Nodo, basada en su rol de red y su estado lógico:
+\begin{itemize}
+    \item \textbf{Círculo Rojo:} Nodo infectado por el ransomware (\texttt{infected}\allowbreak\texttt{=}\allowbreak\texttt{true}). Representa un equipo comprometido que propaga activamente la infección lateral.
+    \item \textbf{Círculo Verde:} Estación de trabajo sana y susceptible. Representa a los hosts vulnerables no infectados.
+    \item \textbf{Círculo Amarillo:} Agente de Internet. Representa la fuente externa WAN de la amenaza.
+    \item \textbf{Cuadrado Azul:} Agente Firewall. Representa la barrera de filtrado perimetral.
+    \item \textbf{Cuadrado Gris:} Agente Switch Central. Representa el nodo centralizador LAN.
+    \item \textbf{Cuadrado Púrpura:} Agente Servidor. Representa el centro de datos local de la red universitaria.
+    \item \textbf{Líneas Naranjas:} Agentes Conexión. Representan el cableado físico de comunicaciones activo.
+    \item \textbf{Polígonos Marrones de Fondo:} Agentes Sala. Muestran los límites físicos de los laboratorios sobre el plano.
+\end{itemize}
+
+\subsection{Estructura Física del Proyecto y Esquemas de Datos}
+El proyecto se organiza mediante un desacoplamiento de capas entre el simulador y la visualización. La organización física de directorios y archivos clave se presenta a continuación:
+\begin{itemize}
+    \item \textbf{\texttt{includes/}:} Contiene los archivos espaciales Shapefile exportados de QGIS:
+    \begin{itemize}
+        \item \texttt{nodos.shp}: Geometría y atributos (\texttt{id}, \texttt{nombre}, \texttt{tipo}).
+        \item \texttt{conexiones.shp}: Geometría de líneas de red (\texttt{origen}, \texttt{destino}).
+        \item \texttt{sala.shp}: Geometría poligonal de laboratorios.
+    \end{itemize}
+    \item \textbf{\texttt{models/}:} Código fuente principal de la simulación BDI en GAML (\texttt{Infeccion\allowbreak Redes.\allowbreak gaml}).
+    \item \textbf{\texttt{front/}:} Aplicación web del dashboard desarrollada en Vue 3 y Vite:
+    \begin{itemize}
+        \item \texttt{public/results/}: Carpeta de salida para logs en CSV:
+        \begin{itemize}
+            \item \texttt{log\_general.csv}: Estadísticas generales por ciclo. Estructurado con la cabecera: \texttt{total\_nodos}, \texttt{total\_salas}, \texttt{total\_pcs}, \texttt{total\_switches}, \texttt{total\_firewall}.
+            \item \texttt{log\_nodos.csv}: Identidades fijas y tipos de nodos de red. Estructurado con la cabecera: \texttt{id}, \texttt{nombre}, \texttt{tipo}.
+            \item \texttt{log\_topologia.csv}: Mapeo estático de enlaces físicos. Estructurado con la cabecera.
+        \end{itemize}
+        \item \texttt{src/App.vue}: Componente principal y orquestador reactivo de la interfaz interactiva.
+        \item \texttt{src/components/}: Sub-componentes especializados:
+        \begin{itemize}
+            \item \texttt{CytoscapeMap.vue}: Encapsula Cytoscape.js para instanciar el mapa de red lógico-espacial georreferenciado.
+            \item \texttt{ChartsGrid.vue}: Inicializa y gestiona las tres referencias del DOM para las gráficas de Apache ECharts.
+        \end{itemize}
+        \item \texttt{src/composables/}: Módulos de composición lógica:
+        \begin{itemize}
+            \item \texttt{usePolling.js}: Reutiliza métodos asíncronos para el fetch de los archivos CSV y su procesamiento elemental.
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+
+\subsection{Arquitectura de Procesamiento y Flujo del Dashboard}
+La capa de visualización se construyó utilizando el framework reactivo Vue 3, empaquetado mediante Vite, proporcionando un panel de monitoreo dinámico a los administradores de red. El dashboard opera bajo un esquema de comunicación asíncrono desacoplado, lo que significa que no existe un enlace de llamadas directo entre GAMA y el frontend. La comunicación se realiza de manera exclusiva a través del sistema de archivos compartidos.
+
+El flujo de procesamiento de datos se define a través de los siguientes pasos:
+\begin{enumerate}
+    \item \textbf{Generación de Datos en GAMA:} Durante la ejecución de la simulación, el motor de GAML vuelca el estado de la red a los archivos CSV de la carpeta \texttt{public/results/} del dashboard de manera no bloqueante.
+    \item \textbf{Polling e Ingesta de Datos:} La aplicación frontend ejecuta un mecanismo de sondeo de archivos (\textit{polling}) cada 2 segundos. Emplea la librería de parseo asíncrono PapaParse para cargar el contenido de los CSV directamente desde el navegador, convirtiendo las cadenas crudas de caracteres en objetos de datos estructurados tipados de manera eficiente.
+    \item \textbf{Representación Gráfica Interactiva:} Los datos parseados actualizan dinámicamente tres áreas de la interfaz:
+    \begin{itemize}
+        \item \textit{Mapa de Red Lógico (Cytoscape.js):} Grafo interactivo que representa la topología. Los nodos cambian de color en tiempo real reflejando su estado BDI (Verde: sano, Rojo: infectado, Negro: aislado lógicamente). Este componente lee las coordenadas espaciales geoespaciales reales provistas por QGIS para fijar la disposición de las estaciones en el panel, respetando la física de los laboratorios.
+        \item \textit{Panel de Gráficas Temporales (ECharts):} Tres gráficos independientes acoplados: (a) línea temporal con área del avance acumulado de hosts infectados por ciclo; (b) curva de evolución del nivel de parche promedio de la LAN; y (c) gráfico de barras apiladas que clasifica a los hosts según su intención BDI activa.
+        \item \textit{Bitácora de Incidentes:} Tabla interactiva que presenta de forma paginada los eventos de infección lateral, el emisor de la carga útil, el receptor, el ciclo temporal y la probabilidad de éxito de transmisión calculada por el motor matemático.
+    \end{itemize}
+\end{enumerate}

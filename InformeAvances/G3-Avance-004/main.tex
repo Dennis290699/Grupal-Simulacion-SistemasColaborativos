@@ -1,0 +1,928 @@
+\documentclass{ieeeaccess}
+\IEEEoverridecommandlockouts
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{subcaption}
+\usepackage{xspace}
+\usepackage{multirow}
+\usepackage{bigstrut}
+\usepackage[spanish,es-tabla]{babel}
+\usepackage{listings}
+\usepackage{url}
+
+% Configuración del lenguaje español para Listings y otros paquetes
+\renewcommand\IEEEkeywordsname{Palabras clave}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+% Configuración del formato para el código de simulación en el Anexo
+\lstset{
+  language=java, % Usamos Java como base para GAML
+  basicstyle=\ttfamily\scriptsize,
+  numbers=left,
+  numberstyle=\tiny,
+  stepnumber=1,
+  numbersep=5pt,
+  backgroundcolor=\color{gray!5},
+  showspaces=false,
+  showstringspaces=false,
+  showtabs=false,
+  frame=single,
+  rulecolor=\color{gray!30},
+  tabsize=2,
+  captionpos=b,
+  breaklines=true,
+  breakatwhitespace=false,
+  keywordstyle=\color{blue}\bfseries,
+  commentstyle=\color{green!50!black}\itshape,
+  stringstyle=\color{purple},
+  morekeywords={species,global,init,create,from,read,write,file,geometry,envelope,float,int,bool,list,string,reflex,when,ask,where,each,first,empty,one_of,flip,rnd,aspect,draw,circle,square,color,border,line,location,font,experiment,display,monitor,output,type,value},
+}
+
+\begin{document}
+\history{Fecha de publicación junio 16, 2026, fecha de versión actual junio 16, 2026.}
+\doi{XX.XXXX/XXXX.2026.DOI}
+
+\title{Simulación y Contención de Ransomware WannaCry en Redes Universitarias: Un Enfoque Basado en Agentes con GAMA Platform}
+
+\author{\uppercase{Byron Paul Condolo Narvaez}\authorrefmark{1}, 
+\uppercase{Kelly Denisse Ledesma Aguilar}\authorrefmark{1}, 
+\uppercase{Bryan Eduardo Loya Cadena}\authorrefmark{1}, y 
+\uppercase{Dennis Adrian Trujillo Vistin}\authorrefmark{1}}
+
+\address[1]{Facultad de Ingeniería y Ciencias Aplicadas, Universidad Central del Ecuador, Quito 170521, Ecuador (e-mail: bpcondolo@uce.edu.ec, kdledesma@uce.edu.ec, beloya@uce.edu.ec, datrujillo@uce.edu.ec)}
+
+\tfootnote{Este trabajo de investigación y desarrollo fue elaborado por el Grupo 3 para la asignatura de Sistemas Colaborativos de la carrera de Computación, Facultad de Ingeniería y Ciencias Aplicadas de la Universidad Central del Ecuador (UCE).}
+
+\markboth
+{Grupo3 \headeretal: Simulación y Contención de WannaCry en Redes Universitarias}
+{Grupo3 \headeretal: Simulación y Contención de WannaCry en Redes Universitarias}
+
+\corresp{Autor de correspondencia: Dennis Adrian Trujillo Vistin (e-mail: datrujillo@uce.edu.ec).}
+
+\begin{abstract}
+El presente trabajo de investigación abordó la problemática de la ciberseguridad en infraestructuras académicas frente a amenazas cibernéticas autopropagables. El objetivo principal consistió en desarrollar una simulación basada en agentes empleando la plataforma GAMA para analizar la dinámica de propagación de un ataque de ransomware inspirado en WannaCry en una red local universitaria y evaluar una estrategia de contención. La metodología empleada incluyó el modelado espacial de siete laboratorios de computación interconectados mediante archivos vectoriales de QGIS, y la implementación de reglas probabilísticas de transmisión lateral basadas en la exposición de puertos y niveles de actualización del sistema operativo. Los resultados demostraron una rápida saturación de la infraestructura en ausencia de controles. No obstante, tras activar un protocolo de contingencia automatizado basado en el aislamiento lógico al alcanzar un umbral crítico del treinta por ciento de equipos infectados, se consiguió proteger el setenta por ciento restante de la red. Finalmente, se concluyó que la topología de la red influyó de forma directa en la velocidad de dispersión de la amenaza y que la segmentación y el aislamiento temprano resultaron altamente eficientes como defensas activas.
+\end{abstract}
+
+\begin{keywords}
+Simulación Basada en Agentes, Ciberseguridad en LAN, Ransomware WannaCry, GAMA Platform, Protocolos de Contingencia.
+\end{keywords}
+
+\maketitle
+
+% Secciones Modulares en Español
+\input{secciones/01-introduccion.tex}
+\input{secciones/02-estado-arte.tex}
+\input{secciones/03-metodologia.tex}
+\input{secciones/04-arquitectura-instanciada.tex}
+\input{secciones/05-resultados-experimentales.tex}
+\input{secciones/06-conclusiones.tex}
+
+% Estilo de Bibliografía y Archivo .bib
+\bibliographystyle{plain}
+\bibliography{references}
+
+% Biografías de los Autores (Placeholders)
+\input{secciones/07-biografias.tex}
+
+\newpage
+\onecolumn
+\appendix[Códigos Fuente de Simulación y Visualización]
+\label{appendix:source_code}
+En este anexo se presentan los códigos fuente de los dos componentes principales de la solución: el modelo de simulación multiagente desarrollado en GAML (Sección \ref{appendix:gaml_code}) y la interfaz de visualización reactiva construida en Vue 3 (Sección \ref{appendix:front_code}).
+
+\subsection{Código del Modelo de Simulación en GAML}
+\label{appendix:gaml_code}
+El listado \ref{list:gaml_code} presenta el código fuente completo implementado en la plataforma GAMA utilizando el lenguaje GAML (\textit{GAMA Modeling Language}). Este código define el comportamiento y ciclo de ejecución BDI de los nodos, las reglas estocásticas de transmisión y los coordinadores de contingencia reactiva.
+
+\begin{lstlisting}[caption={InfeccionRedes.gaml - Código fuente de la simulación en GAMA Platform}, label={list:gaml_code}]
+model InfeccionRedesGIS_BDI
+
+species sala {
+	string nombre;
+
+	aspect default {
+		draw shape color: rgb(165, 75, 75, 100) border: #black;
+	}
+}
+
+global {
+	file nodos_file <- file("../includes/nodos.shp");
+	file conexiones_file <- file("../includes/conexiones.shp");
+	file salas_file <- file("../includes/sala.shp");
+	geometry shape <- envelope(nodos_file); // Evita errores de limites (out of bounds)
+	float firewall_strength <- 0.7;
+	float containment_threshold <- 30.0;
+	bool emergency_containment <- false;
+	int cooldown_min <- 3;
+	int cooldown_max <- 8;
+	float initial_patch_level <- 10.0;
+
+	// Rutas de archivos para registros de logs (.CSV)
+	string log_general_path  <- "../front/public/results/log_general.csv";
+	string log_eventos_path  <- "../front/public/results/log_eventos.csv";
+
+	init {
+		create sala from: salas_file {
+			nombre <- string(read("nombre"));
+		}
+
+		create computer from: nodos_file {
+			id <- int(read("id"));
+			nombre <- string(read("nombre"));
+			string tipoNodo <- string(read("tipo"));
+			is_server <- tipoNodo = "server";
+			is_internet <- tipoNodo = "internet";
+			is_firewall <- tipoNodo = "firewall";
+			is_switch <- tipoNodo = "switch";
+			if is_internet {
+				infected <- true;
+			} else {
+				infected <- false;
+			}
+
+			isolated <- false;
+			patch_level <- int(initial_patch_level) + rnd(10);
+			if tipoNodo = "pc" or is_server or is_switch or is_firewall {
+				open_ports <- [445, 3389, 80];
+			} else {
+				open_ports <- [];
+			}
+
+			write "NODO CARGADO -> " + string(id) + " | " + nombre;
+		}
+
+		create connection from: conexiones_file {
+			int o <- int(read("origen"));
+			int d <- int(read("destino"));
+			list<computer> so <- computer where (each.id = o);
+			list<computer> de <- computer where (each.id = d);
+			if !empty(so) and !empty(de) {
+				source <- first(so);
+				target <- first(de);
+				write "CONEXION OK " + string(o) + " -> " + string(d);
+			}
+		}
+
+		write "===== RESUMEN =====";
+		write "Nodos: " + string(length(computer));
+		write "Links: " + string(length(connection));
+
+		// Escritura Log 1: Datos Generales (Estatico)
+		string encabezado_gen <- "total_nodos,total_salas,total_pcs,total_switches,total_firewall";
+		save encabezado_gen to: log_general_path rewrite: true;
+		int t_nodos <- length(computer);
+		int t_salas <- length(sala);
+		int t_pcs <- length(computer where (not each.is_server and not each.is_internet and not each.is_firewall and not each.is_switch));
+		int t_switches <- length(computer where each.is_switch);
+		int t_firewalls <- length(computer where each.is_firewall);
+		string datos_gen <- string(t_nodos) + "," + string(t_salas) + "," + string(t_pcs) + "," + string(t_switches) + "," + string(t_firewalls);
+		save datos_gen to: log_general_path rewrite: false;
+
+		// Escritura Log 3: Nodos (Estatico)
+		string enc_nodos <- "id,nombre,tipo";
+		save enc_nodos to: "../front/public/results/log_nodos.csv" rewrite: true;
+		loop n over: computer {
+			string tipo_nodo <- "pc";
+			if n.is_internet {
+				tipo_nodo <- "internet";
+			} else if n.is_firewall {
+				tipo_nodo <- "firewall";
+			} else if n.is_switch {
+				tipo_nodo <- "switch";
+			} else if n.is_server {
+				tipo_nodo <- "server";
+			}
+
+			string fila_nodo <- string(n.id) + "," + n.nombre + "," + tipo_nodo;
+			save fila_nodo to: "../front/public/results/log_nodos.csv" rewrite: false;
+		}
+
+		// Escritura Log 4: Topologia (Estatico)
+		string enc_topo <- "origen,destino,tipo_origen,tipo_destino";
+		save enc_topo to: "../front/public/results/log_topologia.csv" rewrite: true;
+		loop c over: connection {
+			string tipo_source <- "pc";
+			string tipo_target <- "pc";
+			if c.source.is_internet {
+				tipo_source <- "internet";
+			} else if c.source.is_firewall {
+				tipo_source <- "firewall";
+			} else if c.source.is_switch {
+				tipo_source <- "switch";
+			} else if c.source.is_server {
+				tipo_source <- "server";
+			}
+
+			if c.target.is_internet {
+				tipo_target <- "internet";
+			} else if c.target.is_firewall {
+				tipo_target <- "firewall";
+			} else if c.target.is_switch {
+				tipo_target <- "switch";
+			} else if c.target.is_server {
+				tipo_target <- "server";
+			}
+
+			string fila_topo <- c.source.nombre + "," + c.target.nombre + "," + tipo_source + "," + tipo_target;
+			save fila_topo to: "../front/public/results/log_topologia.csv" rewrite: false;
+		}
+
+		// Inicializacion Log 2: Eventos de Infeccion (Dinamico)
+		string encabezado_evt <- "ciclo,nodo,evento,desde,probabilidad,patch_lv,infectados_total,intencion";
+		save encabezado_evt to: log_eventos_path rewrite: true;
+		write ">>> GENERACION DE ARCHIVOS LOG CSV CONFIGURADA EN /results/ <<<";
+	}
+
+	// Global BDI: Coordinador de red (Monitoreo global)
+	reflex BDI_global_perception {
+		int total_nodos <- length(computer where !each.is_internet);
+		int total_infectados <- length(computer where (each.infected and !each.is_internet));
+		float tasa <- (total_nodos > 0) ? (float(total_infectados) / float(total_nodos) * 100.0) : 0.0;
+		if tasa >= 80.0 and !emergency_containment {
+			emergency_containment <- true;
+			string fila_alerta <- string(cycle) + ",-,ALERTA_CRITICA,-,-,-," + string(length(computer where each.infected)) + ",-";
+			save fila_alerta to: log_eventos_path rewrite: false;
+			write "==============================";
+			write " ALERTA CRITICA - BDI GLOBAL ";
+			write " RED COMPROMETIDA AL " + string(int(tasa)) + "%";
+			write " INTENCION: AISLAMIENTO TOTAL ";
+			write "==============================";
+			ask computer where !each.is_internet {
+				isolated <- true;
+				intention <- "isolated";
+				write "*** AISLADO EMERGENCIA *** " + nombre;
+				string fila_emergencia <- string(cycle) + "," + nombre + ",AISLADO_EMERGENCIA,-,-," + string(patch_level) + "," + string(length(computer where each.infected)) + ",isolated";
+				save fila_emergencia to: log_eventos_path rewrite: false;
+			}
+		}
+	}
+
+	// Global: Contencion BDI automatica individual/colectiva
+	reflex BDI_global_containment {
+		list<computer> infectados_activos <- computer where (each.infected and !each.isolated and !each.is_internet and !each.detected);
+		if !empty(infectados_activos) {
+			computer victima <- one_of(infectados_activos);
+			victima.detected <- true;
+			if rnd(100) < containment_threshold {
+				write "==============================";
+				write "*** CONTENCION ACTIVADA ***";
+				write "AMENAZA DETECTADA EN: " + victima.nombre;
+				write "==============================";
+				ask computer where (each.infected and !each.is_internet) {
+					isolated <- true;
+					intention <- "isolated";
+					write "*** AISLADO *** " + nombre;
+					string fila_defensa <- string(cycle) + "," + nombre + ",Aislamiento_Contencion,Global,0.0," + string(patch_level) + "," + string(length(computer where each.infected)) + ",isolated";
+					save fila_defensa to: log_eventos_path rewrite: false;
+				}
+			} else {
+				write "*** CONTENCION FALLIDA SOBRE *** " + victima.nombre;
+			}
+		}
+	}
+
+	reflex emergency_check {
+		int infectados <- length(computer where each.infected);
+		int total <- length(computer);
+		if infectados = total and !emergency_containment {
+			emergency_containment <- true;
+			write "==============================";
+			write " ALERTA CRITICA - TODA LA RED COMPROMETIDA ";
+			write "==============================";
+			ask computer where !each.is_internet {
+				isolated <- true;
+				intention <- "isolated";
+				write "*** AISLADO EMERGENCIA *** " + nombre;
+			}
+		}
+	}
+}
+
+species computer {
+	int id;
+	string nombre;
+	bool is_server <- false;
+	bool is_internet <- false;
+	bool is_firewall <- false;
+	bool is_switch <- false;
+
+	// Estados base
+	bool infected <- false;
+	bool isolated <- false;
+	bool detected <- false;
+
+	// Creencias (Beliefs)
+	bool bel_amenaza_cercana <- false;
+	bool bel_red_comprometida <- false;
+	bool bel_soy_vulnerable <- false;
+	int bel_vecinos_infectados <- 0;
+	float bel_riesgo <- 0.0;
+
+	// Deseos (Desires)
+	bool des_sobrevivir <- true;
+	bool des_infectar <- false;
+	bool des_aislarse <- false;
+	bool des_parchear <- false;
+
+	// Intenciones (Intentions)
+	string intention <- "normal";
+
+	// Auxiliares
+	list<int> open_ports <- [];
+	int patch_level <- 0;
+	int cooldown <- 0;
+
+	reflex BDI_perception {
+		list<connection> links <- connection where (each.source = self or each.target = self);
+		int infectados <- 0;
+		loop c over: links {
+			computer vecino <- (c.source = self) ? c.target : c.source;
+			if vecino.infected {
+				infectados <- infectados + 1;
+			}
+		}
+
+		bel_vecinos_infectados <- infectados;
+		bel_amenaza_cercana <- infectados > 0;
+		bel_riesgo <- float(infectados) * 25.0;
+		bel_soy_vulnerable <- (!empty(open_ports)) and (patch_level < 50);
+		int total <- length(computer where !each.is_internet);
+		int glob <- length(computer where (each.infected and !each.is_internet));
+		bel_red_comprometida <- (total > 0) and ((float(glob) / float(total)) > 0.5);
+	}
+
+	reflex BDI_deliberation {
+		des_infectar <- infected;
+		des_aislarse <- bel_amenaza_cercana or bel_red_comprometida;
+		des_parchear <- bel_soy_vulnerable and bel_amenaza_cercana;
+		des_sobrevivir <- true;
+	}
+
+	reflex BDI_planning {
+		if isolated {
+			intention <- "isolated";
+			return;
+		}
+
+		if des_aislarse and des_sobrevivir and bel_riesgo > 50.0 {
+			if rnd(100) < containment_threshold {
+				intention <- "isolate";
+				return;
+			}
+		}
+
+		if des_parchear and !infected {
+			intention <- "patch";
+			return;
+		}
+
+		if des_infectar {
+			intention <- "spread";
+			return;
+		}
+
+		intention <- "normal";
+	}
+
+	reflex BDI_execute {
+		if cooldown > 0 {
+			cooldown <- cooldown - 1;
+		}
+
+		if intention = "isolated" {
+			return;
+		}
+
+		if intention = "isolate" {
+			isolated <- true;
+			intention <- "isolated";
+			write "*** BDI AISLAMIENTO VOLUNTARIO *** " + nombre + " | riesgo=" + string(int(bel_riesgo)) + " | vecinos_infectados=" + string(bel_vecinos_infectados);
+			string fila_aislado <- string(cycle) + "," + nombre + ",AISLADO,-,-," + string(patch_level) + "," + string(length(computer where each.infected)) + ",isolated";
+			save fila_aislado to: log_eventos_path rewrite: false;
+			return;
+		}
+
+		if intention = "patch" {
+			patch_level <- min(100, patch_level + 10);
+			if patch_level >= 50 {
+				bel_soy_vulnerable <- false;
+				des_parchear <- false;
+			}
+
+			write "*** BDI PARCHEO *** " + nombre + " => patch_level=" + string(patch_level);
+			string fila_parcheo <- string(cycle) + "," + nombre + ",PARCHEO,-,-," + string(patch_level) + "," + string(length(computer where each.infected)) + ",patch";
+			save fila_parcheo to: log_eventos_path rewrite: false;
+			return;
+		}
+
+		if intention = "spread" {
+			do spread_action;
+			return;
+		}
+	}
+
+	action spread_action {
+		if cooldown > 0 {
+			return;
+		}
+
+		if isolated {
+			return;
+		}
+
+		list<connection> links <- connection where (each.source = self or each.target = self);
+		if empty(links) {
+			return;
+		}
+
+		connection c <- one_of(links);
+		computer destino <- (c.source = self) ? c.target : c.source;
+		if destino.is_internet {
+			return;
+		}
+
+		if destino.isolated {
+			return;
+		}
+
+		if destino.infected {
+			return;
+		}
+
+		float p <- 0.35;
+		if destino.is_firewall {
+			p <- p * (1.0 - firewall_strength);
+		}
+
+		if 445 in destino.open_ports {
+			p <- p * (1.0 - destino.patch_level / 150.0);
+		}
+
+		if flip(p) {
+			destino.infected <- true;
+			destino.detected <- false;
+			write "BDI INFECTA -> " + destino.nombre + " desde " + self.nombre + " | p=" + string(p);
+			int ciclo_actual <- cycle;
+			string nombre_nodo <- destino.nombre;
+			string evento_tipo <- "Infeccion_Exitosa";
+			string origen_inf <- self.nombre;
+			float prob_infeccion <- p;
+			int p_level <- destino.patch_level;
+			int total_inf <- length(computer where each.infected);
+			string intencion_bdi <- self.intention;
+			string fila_evento <- string(ciclo_actual) + "," + nombre_nodo + "," + evento_tipo + "," + origen_inf + "," + string(prob_infeccion) + "," + string(p_level) + "," + string(total_inf) + "," + intencion_bdi;
+			save fila_evento to: log_eventos_path rewrite: false;
+		}
+
+		cooldown <- rnd(cooldown_max) + cooldown_min;
+	}
+
+	aspect default {
+		float tam <- 0.2;
+		if infected {
+			draw circle(tam) color: #red;
+		} else if is_firewall {
+			draw square(tam) color: #blue;
+		} else if is_switch {
+			draw square(tam) color: #gray;
+		} else if is_internet {
+			draw circle(tam) color: #yellow;
+		} else if is_server {
+			draw square(tam) color: #purple;
+		} else {
+			draw circle(tam) color: #green;
+		}
+
+		if isolated {
+			draw circle(tam * 1.4) color: #black;
+		}
+
+		draw string(nombre + " [" + intention + "]") at: location + {0, -0.5} color: #black font: font("SansSerif", 8, #bold);
+	}
+}
+
+species connection {
+	computer source;
+	computer target;
+
+	aspect default {
+		draw line([source.location, target.location]) color: #orange width: 2;
+	}
+}
+
+experiment Infeccion type: gui {
+	parameter "Nivel de Contencion (%)" type: float var: containment_threshold min: 0 max: 100 category: "Seguridad BDI";
+	parameter "Fuerza Firewall (0-1)" type: float var: firewall_strength min: 0.0 max: 1.0 category: "Seguridad BDI";
+	parameter "Nivel de Parche Inicial (%)" type: float var: initial_patch_level min: 0 max: 100 category: "Seguridad BDI";
+	output {
+		display mapa_red {
+			species sala;
+			species connection;
+			species computer;
+		}
+
+		monitor "Infectados" value: length(computer where each.infected);
+		monitor "Sanos" value: length(computer where (!each.infected and !each.is_internet));
+		monitor "Aislados" value: length(computer where each.isolated);
+		monitor "Intencion: spread" value: length(computer where (each.intention = "spread"));
+		monitor "Intencion: isolate" value: length(computer where (each.intention = "isolate" or each.intention = "isolated"));
+		monitor "Intencion: patch" value: length(computer where (each.intention = "patch"));
+		monitor "Riesgo promedio" value: mean(computer collect each.bel_riesgo);
+	}
+}
+\end{lstlisting}
+
+\subsection{Código del Dashboard Frontend en Vue 3}
+\label{appendix:front_code}
+El listado \ref{list:front_code} expone el componente Reactivo principal \texttt{App.vue}. Este componente maneja la suscripción asíncrona periódica (\textit{polling}) de los logs de simulación, la actualización de los estados en el mapa lógico de topología de red de Cytoscape.js y la graficación temporal con Apache ECharts.
+
+\begin{lstlisting}[caption={App.vue - Componente principal de la interfaz de visualización}, label={list:front_code}, language=html]
+<template>
+  <div class="dashboard">
+    <header class="header">
+      <div class="header-left">
+        <span class="header-tag">BDI * GAMA Platform</span>
+        <h1 class="header-title">WannaCry Network Simulation</h1>
+      </div>
+      <div class="header-stats">
+        <div class="stat" :class="{ danger: stats.infectados > 0 }">
+          <span class="stat-value">{{ stats.infectados }}</span>
+          <span class="stat-label">Infectados</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">{{ stats.sanos }}</span>
+          <span class="stat-label">Sanos</span>
+        </div>
+        <div class="stat warn">
+          <span class="stat-value">{{ stats.aislados }}</span>
+          <span class="stat-label">Aislados</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">{{ stats.ciclo }}</span>
+          <span class="stat-label">Ciclo</span>
+        </div>
+        <div class="pulse-dot" :class="pollingActive ? 'active' : 'inactive'"></div>
+      </div>
+    </header>
+
+    <section class="map-section">
+      <div class="section-label">Red * Topologia en vivo</div>
+      <CytoscapeMap ref="cyCompRef" :base="BASE" @init="onCyInit" @ready="onCyReady" />
+      <div class="legend">
+        <span class="leg-item"><span class="dot" style="background:#22c55e"></span>Sano</span>
+        <span class="leg-item"><span class="dot" style="background:#ef4444"></span>Infectado</span>
+        <span class="leg-item"><span class="dot" style="background:#1e293b;border:2px solid #475569"></span>Aislado</span>
+        <span class="leg-item">��️ PC</span>
+        <span class="leg-item">��️ Firewall</span>
+        <span class="leg-item">�� Switch</span>
+        <span class="leg-item">☁️ Internet</span>
+        <span class="leg-item">��️ Server</span>
+      </div>
+    </section>
+
+    <ChartsGrid ref="chartsRef" @mounted="onChartsMounted">
+      <template #events>
+        <tr v-for="(ev, i) in eventosRecientes" :key="i" :class="rowClass(ev.evento)">
+          <td>{{ ev.ciclo }}</td>
+          <td>{{ ev.nodo }}</td>
+          <td><span class="badge" :class="badgeClass(ev.evento)">{{ ev.evento }}</span></td>
+          <td>{{ ev.desde }}</td>
+          <td>{{ ev.probabilidad && ev.probabilidad !== '-' ? parseFloat(ev.probabilidad).toFixed(3) : '-' }}</td>
+        </tr>
+      </template>
+    </ChartsGrid>
+  </div>
+</template>
+
+<script setup>
+import { ref, onUnmounted, computed, nextTick } from 'vue'
+import * as echarts from 'echarts'
+import CytoscapeMap from './components/CytoscapeMap.vue'
+import ChartsGrid from './components/ChartsGrid.vue'
+import { fetchCSV, cleanRow } from './composables/usePolling'
+
+const BASE = '/results'
+const cyCompRef = ref(null)
+const chartsRef = ref(null)
+
+let cyComp = null
+let ecInfectados = null
+let ecPatch = null
+let ecIntenciones = null
+let pollTimer = null
+let pollingStarted = false
+
+const pollingActive = ref(false)
+const eventos = ref([])
+const nodoEstado = ref({})
+
+const stats = computed(() => {
+  const vals = Object.values(nodoEstado.value)
+  const infectados = vals.filter(n => n.infected && !n.is_internet).length
+  const aislados = vals.filter(n => n.isolated).length
+  const sanos = vals.filter(n => !n.infected && !n.is_internet && !n.isolated).length
+  const ultimo = eventos.value.length ? eventos.value[eventos.value.length - 1].ciclo : 0
+  return { infectados, aislados, sanos, ciclo: ultimo }
+})
+
+const eventosRecientes = computed(() => [...eventos.value].reverse().slice(0, 50))
+
+function onCyInit(initialEstado) {
+  nodoEstado.value = initialEstado
+}
+
+function onCyReady() {
+  cyComp = cyCompRef?.value
+}
+
+function updateCyNode(nombre, infected, isolated) {
+  if (!cyComp) return
+  cyComp.updateNode(nombre, infected, isolated)
+}
+
+async function onChartsMounted() {
+  await waitForChartRefs()
+  initCharts()
+  startPolling()
+}
+
+function waitForChartRefs(maxTries = 30) {
+  return new Promise((resolve) => {
+    let tries = 0
+    function check() {
+      const infectEl = chartsRef.value?.infectados
+      const patchEl = chartsRef.value?.patch
+      const intencionesEl = chartsRef.value?.intenciones
+      if (infectEl && patchEl && intencionesEl) {
+        resolve()
+        return
+      }
+      tries++
+      if (tries >= maxTries) {
+        console.error('Refs no resueltas tras', maxTries, 'frames')
+        resolve()
+        return
+      }
+      requestAnimationFrame(check)
+    }
+    requestAnimationFrame(check)
+  })
+}
+
+function initCharts() {
+  if (ecInfectados || ecPatch || ecIntenciones) return
+  const infectEl = chartsRef.value?.infectados
+  const patchEl = chartsRef.value?.patch
+  const intencionesEl = chartsRef.value?.intenciones
+
+  if (!infectEl || !patchEl || !intencionesEl) return
+
+  ecInfectados = echarts.init(infectEl, 'dark')
+  ecPatch = echarts.init(patchEl, 'dark')
+  ecIntenciones = echarts.init(intencionesEl, 'dark')
+
+  const baseOpt = {
+    backgroundColor: 'transparent',
+    grid: { left: 44, right: 16, top: 16, bottom: 36 },
+    xAxis: { type: 'category', data: [], axisLabel: { color: '#94a3b8', fontSize: 10 } },
+    yAxis: { type: 'value', axisLabel: { color: '#94a3b8', fontSize: 10 }, splitLine: { lineStyle: { color: '#1e293b' } } },
+    tooltip: { trigger: 'axis' },
+  }
+
+  ecInfectados.setOption({
+    ...baseOpt,
+    series: [{ name: 'Infectados', type: 'line', data: [], smooth: true, itemStyle: { color: '#ef4444' }, areaStyle: { color: 'rgba(239,68,68,0.15)' } }],
+  })
+
+  ecPatch.setOption({
+    ...baseOpt,
+    series: [{ name: 'Patch avg', type: 'line', data: [], smooth: true, itemStyle: { color: '#22c55e' }, areaStyle: { color: 'rgba(34,197,94,0.15)' } }],
+  })
+
+  ecIntenciones.setOption({
+    backgroundColor: 'transparent',
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      formatter: function (params) {
+        const map = { spread: 'Propagar', patch: 'Parchar', isolated: 'Aislar', normal: 'Normal' }
+        let res = `<div style="font-family: monospace;">Ciclo: ${params[0].name}</div>`
+        params.forEach(item => {
+          if (item.value > 0) {
+            const label = map[item.seriesName] || item.seriesName
+            res += `<div style="font-family: monospace;">${item.marker} ${label}: <b>${item.value}</b></div>`
+          }
+        })
+        return res
+      }
+    },
+    legend: {
+      data: ['spread', 'patch', 'isolated', 'normal'],
+      textStyle: { color: '#94a3b8', fontSize: 10 },
+      top: 4,
+      formatter: function (name) {
+        const map = { spread: 'Propagar', patch: 'Parchar', isolated: 'Aislar', normal: 'Normal' }
+        return map[name] || name
+      }
+    },
+    grid: { left: 44, right: 16, top: 36, bottom: 36 },
+    xAxis: { type: 'category', data: [], axisLabel: { color: '#94a3b8', fontSize: 10 } },
+    yAxis: { type: 'value', axisLabel: { color: '#94a3b8', fontSize: 10 }, splitLine: { lineStyle: { color: '#1e293b' } } },
+    series: [
+      { name: 'spread', type: 'bar', stack: 'total', data: [], itemStyle: { color: '#ef4444' } },
+      { name: 'patch', type: 'bar', stack: 'total', data: [], itemStyle: { color: '#22c55e' } },
+      { name: 'isolated', type: 'bar', stack: 'total', data: [], itemStyle: { color: '#475569' } },
+      { name: 'normal', type: 'bar', stack: 'total', data: [], itemStyle: { color: '#1e293b' } },
+    ],
+  })
+}
+
+let lastRowCount = 0
+
+function startPolling() {
+  if (pollingStarted) return
+  pollingStarted = true
+  pollingActive.value = true
+  pollTimer = setInterval(pollCSV, 2000)
+  pollCSV()
+}
+
+onUnmounted(() => clearInterval(pollTimer))
+
+async function pollCSV() {
+  try {
+    const rawRows = await fetchCSV(`${BASE}/log_eventos.csv`)
+    const rows = rawRows.map(cleanRow)
+
+    if (rows.length <= lastRowCount) return
+
+    const nuevas = rows.slice(lastRowCount)
+    lastRowCount = rows.length
+
+    nuevas.forEach(procesarEvento)
+    eventos.value = [...rows]
+    updateCharts(rows)
+
+    if (cyComp) cyComp.resizeFit()
+  } catch (e) {
+    console.warn('Poll error:', e.message)
+  }
+}
+
+function procesarEvento(ev) {
+  const nodo = ev.nodo
+  const evento = ev.evento
+  const desde = ev.desde
+
+  if (!nodo || nodo === '-') return
+
+  if (evento === 'Infeccion_Exitosa') {
+    if (nodoEstado.value[nodo]) {
+      nodoEstado.value[nodo].infected = true
+      nodoEstado.value[nodo].isolated = false
+    }
+    updateCyNode(nodo, true, false)
+    if (desde && desde !== '-') {
+      cyComp?.markAttackEdge(desde, nodo)
+    }
+  }
+
+  if (evento === 'AISLADO' || evento === 'AISLADO_EMERGENCIA' || evento === 'Aislamiento_Contencion') {
+    if (nodoEstado.value[nodo]) {
+      nodoEstado.value[nodo].infected = true
+      nodoEstado.value[nodo].isolated = true
+    }
+    updateCyNode(nodo, true, true)
+  }
+
+  if (evento === 'PARCHEO') {
+    if (nodoEstado.value[nodo]) {
+      nodoEstado.value[nodo].infected = false
+      nodoEstado.value[nodo].isolated = false
+    }
+    updateCyNode(nodo, false, false)
+  }
+}
+
+function updateCharts(rows) {
+  if (!ecInfectados || !ecPatch || !ecIntenciones) return
+  const ciclosSet = [...new Set(rows.map(r => r.ciclo))].sort((a, b) => parseInt(a) - parseInt(b))
+
+  const infectSerie = ciclosSet.map(c => {
+    const filasC = rows.filter(r => r.ciclo === c && r.infectados_total && r.infectados_total !== '-')
+    if (!filasC.length) return null
+    return parseInt(filasC[filasC.length - 1].infectados_total)
+  })
+
+  const patchRows = rows.filter(r => r.evento === 'PARCHEO')
+  const patchCiclos = [...new Set(patchRows.map(r => r.ciclo))].sort((a, b) => parseInt(a) - parseInt(b))
+  const patchSerie = patchCiclos.map(c => {
+    const vals = patchRows.filter(r => r.ciclo === c).map(r => parseInt(r.patch_lv)).filter(v => !isNaN(v))
+    return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : 0
+  })
+
+  const spreadSerie = ciclosSet.map(c => rows.filter(r => r.ciclo === c && r.intencion === 'spread').length)
+  const patchISerie = ciclosSet.map(c => rows.filter(r => r.ciclo === c && r.intencion === 'patch').length)
+  const isolateSerie = ciclosSet.map(c => rows.filter(r => r.ciclo === c && (r.intencion === 'isolated' || r.intencion === 'isolate')).length)
+  const normalSerie = ciclosSet.map(c => rows.filter(r => r.ciclo === c && r.intencion === 'normal').length)
+
+  ecInfectados.setOption({ xAxis: { data: ciclosSet }, series: [{ data: infectSerie }] })
+  ecPatch.setOption({ xAxis: { data: patchCiclos }, series: [{ data: patchSerie }] })
+  ecIntenciones.setOption({
+    xAxis: { data: ciclosSet },
+    series: [
+      { name: 'spread', data: spreadSerie },
+      { name: 'patch', data: patchISerie },
+      { name: 'isolated', data: isolateSerie },
+      { name: 'normal', data: normalSerie },
+    ],
+  })
+}
+
+function rowClass(evento) {
+  if (evento === 'Infeccion_Exitosa') return 'row-infected'
+  if (evento?.includes('AISLADO')) return 'row-isolated'
+  if (evento === 'ALERTA_CRITICA') return 'row-alert'
+  if (evento === 'PARCHEO') return 'row-patch'
+  return ''
+}
+
+function badgeClass(evento) {
+  if (evento === 'Infeccion_Exitosa') return 'badge-red'
+  if (evento?.includes('AISLADO')) return 'badge-dark'
+  if (evento === 'ALERTA_CRITICA') return 'badge-orange'
+  if (evento === 'PARCHEO') return 'badge-green'
+  return 'badge-gray'
+}
+</script>
+
+<style scoped>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500;600&display=swap');
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+.dashboard {
+  min-height: 100vh;
+  background: #0a0f1e;
+  color: #e2e8f0;
+  font-family: 'Inter', sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  background: #0d1526;
+  border-bottom: 1px solid #1e293b;
+}
+.header-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #f97316;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 2px;
+}
+.header-title { font-size: 18px; font-weight: 600; color: #f1f5f9; }
+.header-stats { display: flex; align-items: center; gap: 24px; }
+.stat { text-align: center; }
+.stat-value { display: block; font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 600; color: #f1f5f9; line-height: 1; }
+.stat-label { display: block; font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
+.stat.danger .stat-value { color: #ef4444; }
+.stat.warn .stat-value { color: #f97316; }
+
+.pulse-dot { width: 10px; height: 10px; border-radius: 50%; }
+.pulse-dot.active { background: #22c55e; box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.3); animation: pulse 1.5s infinite; }
+.pulse-dot.inactive { background: #334155; }
+@keyframes pulse { 0%, 100% { box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.3) } 50% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.1) } }
+
+.map-section { padding: 16px 24px 8px; }
+.section-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #475569; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; }
+.legend { display: flex; gap: 16px; margin-top: 8px; flex-wrap: wrap; }
+.leg-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #64748b; }
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+.row-infected td { background: rgba(239, 68, 68, 0.07); }
+.row-isolated td { background: rgba(30, 41, 59, 0.5); }
+.row-alert td { background: rgba(249, 115, 22, 0.1); }
+.row-patch td { background: rgba(34, 197, 94, 0.06); }
+
+.badge { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 9px; font-weight: 600; letter-spacing: 0.05em; }
+.badge-red { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+.badge-dark { background: rgba(15, 23, 42, 0.8); color: #94a3b8; }
+.badge-orange { background: rgba(249, 115, 22, 0.2); color: #fb923c; }
+.badge-green { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+.badge-gray { background: rgba(51, 65, 85, 0.5); color: #64748b; }
+</style>
+\end{lstlisting}
+
+\EOD
+\end{document}
